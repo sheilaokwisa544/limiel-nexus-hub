@@ -1,11 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Bell, Search, Download, FileText, Shield, TrendingUp, Wallet,
   Clock, CheckCircle2, AlertCircle, Plus, Home, LayoutDashboard, Heart, Settings, LogOut,
 } from "lucide-react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from "recharts";
+import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from "recharts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,9 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatWidget } from "@/components/chat-widget";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
@@ -49,11 +51,58 @@ function useCounter(to: number, ms = 900) {
   return n;
 }
 
+const mockPolicies = [
+  { id: "POL-001", policy_number: "POL-001", type: "motor", provider: "Britam", monthly_premium: 3200, status: "active", renewal_date: "2026-09-14" },
+  { id: "POL-002", policy_number: "POL-002", type: "health", provider: "Jubilee", monthly_premium: 5800, status: "active", renewal_date: "2026-11-02" },
+  { id: "POL-003", policy_number: "POL-003", type: "travel", provider: "APA", monthly_premium: 1200, status: "expiring", renewal_date: "2026-08-01" },
+];
+
 function Dashboard() {
-  const active = useCounter(3);
-  const renewals = useCounter(1);
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
+      const name = (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0];
+      setUser({ email: u?.email, name });
+    });
+  }, []);
+
+  const { data: dbPolicies } = useQuery({
+    queryKey: ["policies"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("policies")
+        .select("id, policy_number, type, status, monthly_premium, renewal_date, provider_id, providers(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const policies = (dbPolicies && dbPolicies.length > 0)
+    ? dbPolicies.map((p: any) => ({
+        id: p.id, policy_number: p.policy_number, type: p.type, provider: p.providers?.name ?? "—",
+        monthly_premium: Number(p.monthly_premium), status: p.status, renewal_date: p.renewal_date,
+      }))
+    : mockPolicies;
+
+  const active = useCounter(policies.filter((p) => p.status === "active").length);
+  const renewals = useCounter(policies.filter((p) => p.status === "expiring").length);
   const claims = useCounter(2);
-  const totalPaid = useCounter(28400);
+  const totalPaid = useCounter(policies.reduce((s, p) => s + p.monthly_premium * 6, 0));
+
+  const signOut = async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    nav({ to: "/auth", replace: true });
+  };
+
+  const displayName = user?.name ?? "there";
+  const initials = (user?.name ?? user?.email ?? "L I").split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -68,21 +117,21 @@ function Dashboard() {
             </Link>
             <nav className="space-y-1 text-sm">
               {[
-                { icon: LayoutDashboard, label: "Overview", to: "/dashboard", active: true },
-                { icon: Shield, label: "Policies", to: "/dashboard" },
-                { icon: FileText, label: "Claims", to: "/dashboard" },
-                { icon: Heart, label: "Favorites", to: "/dashboard" },
-                { icon: Wallet, label: "Payments", to: "/dashboard" },
-                { icon: Settings, label: "Settings", to: "/dashboard" },
+                { icon: LayoutDashboard, label: "Overview", active: true },
+                { icon: Shield, label: "Policies" },
+                { icon: FileText, label: "Claims" },
+                { icon: Heart, label: "Favorites" },
+                { icon: Wallet, label: "Payments" },
+                { icon: Settings, label: "Settings" },
               ].map((n) => (
-                <Link key={n.label} to={n.to as any} className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${n.active ? "gradient-hero-bg text-primary-foreground shadow-soft" : "hover:bg-muted"}`}>
+                <button key={n.label} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${n.active ? "gradient-hero-bg text-primary-foreground shadow-soft" : "hover:bg-muted"}`}>
                   <n.icon className="h-4 w-4" /> {n.label}
-                </Link>
+                </button>
               ))}
               <Link to="/" className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
                 <Home className="h-4 w-4" /> Back to site
               </Link>
-              <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
+              <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
                 <LogOut className="h-4 w-4" /> Sign out
               </button>
             </nav>
@@ -92,7 +141,7 @@ function Dashboard() {
         <main className="space-y-6">
           <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">Welcome back, Jane 👋</h1>
+              <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">Welcome back, {displayName} 👋</h1>
               <p className="text-sm text-muted-foreground">Here's what's happening with your policies today.</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -103,7 +152,7 @@ function Dashboard() {
               <Button variant="outline" size="icon" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Avatar><AvatarFallback className="gradient-hero-bg text-primary-foreground">JD</AvatarFallback></Avatar>
+              <Avatar><AvatarFallback className="gradient-hero-bg text-primary-foreground">{initials}</AvatarFallback></Avatar>
             </div>
           </header>
 
@@ -180,13 +229,13 @@ function Dashboard() {
                 <TableBody>
                   {policies.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.id}</TableCell>
-                      <TableCell>{p.type}</TableCell>
+                      <TableCell className="font-medium">{p.policy_number}</TableCell>
+                      <TableCell className="capitalize">{p.type}</TableCell>
                       <TableCell>{p.provider}</TableCell>
-                      <TableCell>KES {p.premium.toLocaleString()}</TableCell>
-                      <TableCell>{p.renewal}</TableCell>
+                      <TableCell>KES {p.monthly_premium.toLocaleString()}</TableCell>
+                      <TableCell>{p.renewal_date}</TableCell>
                       <TableCell>
-                        <Badge variant={p.status === "Active" ? "secondary" : "outline"}>{p.status}</Badge>
+                        <Badge variant={p.status === "active" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => toast.success("Policy document downloaded")}>
