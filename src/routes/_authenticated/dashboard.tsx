@@ -229,13 +229,13 @@ function Dashboard() {
                 <TableBody>
                   {policies.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.id}</TableCell>
-                      <TableCell>{p.type}</TableCell>
+                      <TableCell className="font-medium">{p.policy_number}</TableCell>
+                      <TableCell className="capitalize">{p.type}</TableCell>
                       <TableCell>{p.provider}</TableCell>
-                      <TableCell>KES {p.premium.toLocaleString()}</TableCell>
-                      <TableCell>{p.renewal}</TableCell>
+                      <TableCell>KES {p.monthly_premium.toLocaleString()}</TableCell>
+                      <TableCell>{p.renewal_date}</TableCell>
                       <TableCell>
-                        <Badge variant={p.status === "Active" ? "secondary" : "outline"}>{p.status}</Badge>
+                        <Badge variant={p.status === "active" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => toast.success("Policy document downloaded")}>
