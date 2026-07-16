@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatWidget } from "@/components/chat-widget";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -60,6 +61,7 @@ const mockPolicies = [
 function Dashboard() {
   const nav = useNavigate();
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
 
   useEffect(() => {
@@ -117,22 +119,22 @@ function Dashboard() {
             </Link>
             <nav className="space-y-1 text-sm">
               {[
-                { icon: LayoutDashboard, label: "Overview", active: true },
-                { icon: Shield, label: "Policies" },
-                { icon: FileText, label: "Claims" },
-                { icon: Heart, label: "Favorites" },
-                { icon: Wallet, label: "Payments" },
-                { icon: Settings, label: "Settings" },
+                { icon: LayoutDashboard, label: t("dash.overview"), active: true },
+                { icon: Shield, label: t("dash.policies") },
+                { icon: FileText, label: t("dash.claims") },
+                { icon: Heart, label: t("dash.favorites") },
+                { icon: Wallet, label: t("dash.payments") },
+                { icon: Settings, label: t("dash.settings") },
               ].map((n) => (
                 <button key={n.label} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${n.active ? "gradient-hero-bg text-primary-foreground shadow-soft" : "hover:bg-muted"}`}>
                   <n.icon className="h-4 w-4" /> {n.label}
                 </button>
               ))}
               <Link to="/" className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
-                <Home className="h-4 w-4" /> Back to site
+                <Home className="h-4 w-4" /> {t("dash.backToSite")}
               </Link>
               <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
-                <LogOut className="h-4 w-4" /> Sign out
+                <LogOut className="h-4 w-4" /> {t("dash.signOut")}
               </button>
             </nav>
           </div>
@@ -141,13 +143,13 @@ function Dashboard() {
         <main className="space-y-6">
           <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">Welcome back, {displayName} 👋</h1>
-              <p className="text-sm text-muted-foreground">Here's what's happening with your policies today.</p>
+              <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">{t("dash.welcome", { name: displayName })}</h1>
+              <p className="text-sm text-muted-foreground">{t("dash.subtitle")}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <div className="relative hidden sm:block">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search…" className="w-56 pl-9" />
+                <Input placeholder={t("dash.search")} className="w-56 pl-9" />
               </div>
               <Button variant="outline" size="icon" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
@@ -157,17 +159,17 @@ function Dashboard() {
           </header>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat title="Active Policies" value={active} icon={Shield} tint="from-primary to-primary-glow" />
-            <Stat title="Upcoming Renewals" value={renewals} icon={Clock} tint="from-accent to-primary" />
-            <Stat title="Claims Open" value={claims} icon={AlertCircle} tint="from-secondary to-primary" />
-            <Stat title="Total Paid (YTD)" value={`KES ${totalPaid.toLocaleString()}`} icon={Wallet} tint="from-primary to-secondary" />
+            <Stat title={t("dash.stat.active")} value={active} icon={Shield} tint="from-primary to-primary-glow" mom={t("dash.mom")} />
+            <Stat title={t("dash.stat.renewals")} value={renewals} icon={Clock} tint="from-accent to-primary" mom={t("dash.mom")} />
+            <Stat title={t("dash.stat.claims")} value={claims} icon={AlertCircle} tint="from-secondary to-primary" mom={t("dash.mom")} />
+            <Stat title={t("dash.stat.paid")} value={`KES ${totalPaid.toLocaleString()}`} icon={Wallet} tint="from-primary to-secondary" mom={t("dash.mom")} />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2 shadow-soft">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Premium spend</CardTitle>
-                <Badge variant="secondary">Last 7 months</Badge>
+                <CardTitle>{t("dash.premiumSpend")}</CardTitle>
+                <Badge variant="secondary">{t("dash.last7")}</Badge>
               </CardHeader>
               <CardContent className="h-72">
                 <ResponsiveContainer>
@@ -189,19 +191,19 @@ function Dashboard() {
             </Card>
 
             <Card className="shadow-soft">
-              <CardHeader><CardTitle>Claims Status</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("dash.claimsStatus")}</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {[
-                  { id: "CLM-441", status: "Approved", color: "text-secondary", Icon: CheckCircle2 },
-                  { id: "CLM-440", status: "Under review", color: "text-accent", Icon: Clock },
-                  { id: "CLM-438", status: "Info required", color: "text-destructive", Icon: AlertCircle },
+                  { id: "CLM-441", status: t("dash.claim.approved"), color: "text-secondary", Icon: CheckCircle2 },
+                  { id: "CLM-440", status: t("dash.claim.review"), color: "text-accent", Icon: Clock },
+                  { id: "CLM-438", status: t("dash.claim.info"), color: "text-destructive", Icon: AlertCircle },
                 ].map((c) => (
                   <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-3">
                       <c.Icon className={`h-5 w-5 ${c.color}`} />
                       <div>
                         <p className="text-sm font-semibold">{c.id}</p>
-                        <p className="text-xs text-muted-foreground">Motor / windshield</p>
+                        <p className="text-xs text-muted-foreground">{t("dash.claim.detail")}</p>
                       </div>
                     </div>
                     <span className={`text-xs font-medium ${c.color}`}>{c.status}</span>
@@ -213,17 +215,17 @@ function Dashboard() {
 
           <Card className="shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Active Policies</CardTitle>
+              <CardTitle>{t("dash.activePolicies")}</CardTitle>
               <Button size="sm" asChild className="gradient-hero-bg text-primary-foreground">
-                <Link to="/quote"><Plus className="mr-1 h-4 w-4" /> New policy</Link>
+                <Link to="/quote"><Plus className="mr-1 h-4 w-4" /> {t("dash.newPolicy")}</Link>
               </Button>
             </CardHeader>
             <CardContent className="overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Policy</TableHead><TableHead>Type</TableHead><TableHead>Provider</TableHead>
-                    <TableHead>Premium</TableHead><TableHead>Renewal</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                    <TableHead>{t("dash.col.policy")}</TableHead><TableHead>{t("dash.col.type")}</TableHead><TableHead>{t("dash.col.provider")}</TableHead>
+                    <TableHead>{t("dash.col.premium")}</TableHead><TableHead>{t("dash.col.renewal")}</TableHead><TableHead>{t("dash.col.status")}</TableHead><TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -238,7 +240,7 @@ function Dashboard() {
                         <Badge variant={p.status === "active" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => toast.success("Policy document downloaded")}>
+                        <Button variant="ghost" size="sm" onClick={() => toast.success(t("dash.pdfDownloaded"))}>
                           <Download className="mr-1 h-3.5 w-3.5" /> PDF
                         </Button>
                       </TableCell>
@@ -250,11 +252,11 @@ function Dashboard() {
           </Card>
 
           <Card className="shadow-soft">
-            <CardHeader><CardTitle>Payment History</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("dash.paymentHistory")}</CardTitle></CardHeader>
             <CardContent className="overflow-auto">
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>Date</TableHead><TableHead>Policy</TableHead><TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead>
+                  <TableHead>{t("dash.col.date")}</TableHead><TableHead>{t("dash.col.policy")}</TableHead><TableHead>{t("dash.col.amount")}</TableHead><TableHead>{t("dash.col.method")}</TableHead><TableHead>{t("dash.col.status")}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {payments.map((p) => (
@@ -272,7 +274,7 @@ function Dashboard() {
           </Card>
 
           <div className="text-center">
-            <Link to="/admin" className="text-sm text-primary underline">View admin dashboard preview →</Link>
+            <Link to="/admin" className="text-sm text-primary underline">{t("dash.viewAdmin")}</Link>
           </div>
         </main>
       </div>
@@ -281,7 +283,7 @@ function Dashboard() {
   );
 }
 
-function Stat({ title, value, icon: Icon, tint }: { title: string; value: React.ReactNode; icon: any; tint: string }) {
+function Stat({ title, value, icon: Icon, tint, mom }: { title: string; value: React.ReactNode; icon: any; tint: string; mom: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="overflow-hidden shadow-soft">
@@ -290,7 +292,7 @@ function Stat({ title, value, icon: Icon, tint }: { title: string; value: React.
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
               <p className="mt-2 font-display text-2xl font-bold">{value}</p>
-              <p className="mt-1 flex items-center gap-1 text-xs text-secondary"><TrendingUp className="h-3 w-3" /> +12% MoM</p>
+              <p className="mt-1 flex items-center gap-1 text-xs text-secondary"><TrendingUp className="h-3 w-3" /> {mom}</p>
             </div>
             <div className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${tint} text-primary-foreground shadow-soft`}>
               <Icon className="h-5 w-5" />

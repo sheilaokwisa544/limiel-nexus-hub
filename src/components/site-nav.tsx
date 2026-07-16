@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X, Shield, Moon, Sun, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, Shield, Moon, Sun, LogOut, LayoutDashboard, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,23 +9,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { User } from "@supabase/supabase-js";
-
-const links = [
-  { to: "/", label: "Home" },
-  { to: "/products", label: "Products" },
-  { to: "/providers", label: "Providers" },
-  { to: "/claims", label: "Claims" },
-  { to: "/about", label: "About" },
-  { to: "/blog", label: "Blog" },
-  { to: "/contact", label: "Contact" },
-] as const;
+import { useI18n } from "@/lib/i18n";
 
 export function SiteNav() {
   const nav = useNavigate();
+  const { t, lang, setLang } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
+  const links = [
+    { to: "/", label: t("nav.home") },
+    { to: "/products", label: t("nav.products") },
+    { to: "/providers", label: t("nav.providers") },
+    { to: "/claims", label: t("nav.claims") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/blog", label: t("nav.blog") },
+    { to: "/contact", label: t("nav.contact") },
+  ] as const;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -50,6 +52,25 @@ export function SiteNav() {
   };
 
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? "LI";
+
+  const LangToggle = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" aria-label={t("nav.language")} className="gap-1.5 px-2">
+          <Languages className="h-4 w-4" />
+          <span className="text-xs font-semibold uppercase">{lang}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setLang("en")} className={lang === "en" ? "font-semibold text-primary" : ""}>
+          English
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLang("sw")} className={lang === "sw" ? "font-semibold text-primary" : ""}>
+          Kiswahili
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <header className={cn("sticky top-0 z-50 w-full transition-all", scrolled ? "glass shadow-soft" : "bg-transparent")}>
@@ -76,6 +97,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <div className="hidden sm:inline-flex">{LangToggle}</div>
           <Button variant="ghost" size="icon" onClick={() => setDark((d) => !d)} aria-label="Toggle theme" className="hidden sm:inline-flex">
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -88,19 +110,19 @@ export function SiteNav() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> {t("nav.dashboard")}</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> {t("nav.signOut")}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link to="/auth">Login</Link>
+              <Link to="/auth">{t("nav.login")}</Link>
             </Button>
           )}
 
           <Button asChild className="hidden sm:inline-flex gradient-hero-bg text-primary-foreground shadow-soft hover:opacity-95">
-            <Link to="/quote">Get Quote</Link>
+            <Link to="/quote">{t("nav.getQuote")}</Link>
           </Button>
           <button className="rounded-md p-2 lg:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -114,16 +136,17 @@ export function SiteNav() {
             {links.map((l) => (
               <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">{l.label}</Link>
             ))}
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex items-center gap-2">
+              {LangToggle}
               {user ? (
                 <>
-                  <Button asChild variant="outline" className="flex-1"><Link to="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link></Button>
-                  <Button onClick={signOut} className="flex-1 gradient-hero-bg text-primary-foreground">Sign out</Button>
+                  <Button asChild variant="outline" className="flex-1"><Link to="/dashboard" onClick={() => setOpen(false)}>{t("nav.dashboard")}</Link></Button>
+                  <Button onClick={signOut} className="flex-1 gradient-hero-bg text-primary-foreground">{t("nav.signOut")}</Button>
                 </>
               ) : (
                 <>
-                  <Button asChild variant="outline" className="flex-1"><Link to="/auth" onClick={() => setOpen(false)}>Login</Link></Button>
-                  <Button asChild className="flex-1 gradient-hero-bg text-primary-foreground"><Link to="/quote" onClick={() => setOpen(false)}>Get Quote</Link></Button>
+                  <Button asChild variant="outline" className="flex-1"><Link to="/auth" onClick={() => setOpen(false)}>{t("nav.login")}</Link></Button>
+                  <Button asChild className="flex-1 gradient-hero-bg text-primary-foreground"><Link to="/quote" onClick={() => setOpen(false)}>{t("nav.getQuote")}</Link></Button>
                 </>
               )}
             </div>
