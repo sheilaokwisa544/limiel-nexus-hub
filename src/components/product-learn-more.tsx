@@ -166,7 +166,7 @@ export function ProductLearnMoreDialog({
             </Link>
           </Button>
           <Button asChild className="gradient-hero-bg text-primary-foreground">
-            <Link to="/quote" search={{ product: product.id } as never}>
+            <Link to="/quote">
               Get a Quote <ArrowRight className="ml-1.5 h-4 w-4" />
             </Link>
           </Button>
