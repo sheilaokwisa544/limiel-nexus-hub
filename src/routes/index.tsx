@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import {
-  Car, Heart, Plane, Users, Stethoscope, Home, Briefcase, ShieldAlert,
   Zap, ShieldCheck, Wallet, HeadphonesIcon,
-  Star, Quote, ArrowRight, Check, Mail, Phone, MapPin,
+  Star, Quote, ArrowRight, Check, Mail, Phone, MapPin, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { ProductLearnMoreDialog } from "@/components/product-learn-more";
+import { products, type Product } from "@/data/products";
 import { toast } from "sonner";
 import { useState } from "react";
 import heroImg from "@/assets/hero.jpg";
@@ -23,16 +24,6 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-const categories = [
-  { icon: Car, title: "Motor Insurance", desc: "Comprehensive & third-party cover for your vehicle." },
-  { icon: Heart, title: "Health Insurance", desc: "Inpatient, outpatient and specialist care." },
-  { icon: Plane, title: "Travel Insurance", desc: "Trip cancellation, medical & baggage cover." },
-  { icon: Users, title: "Life Insurance", desc: "Protect your family's financial future." },
-  { icon: Stethoscope, title: "Medical Cover", desc: "Chronic care and wellness plans." },
-  { icon: Home, title: "Home Insurance", desc: "Buildings, contents and liability cover." },
-  { icon: Briefcase, title: "Business Insurance", desc: "SME liability, property & workforce." },
-  { icon: ShieldAlert, title: "Personal Accident", desc: "Income protection & injury benefits." },
-];
 
 const whyItems = [
   { icon: Zap, title: "Fast Quotes", desc: "Compare 20+ insurers in under 60 seconds." },
