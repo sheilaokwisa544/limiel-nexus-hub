@@ -163,36 +163,84 @@ function QuickQuoteCard() {
 }
 
 function Categories() {
+  const [openProduct, setOpenProduct] = useState<Product | null>(null);
   return (
     <section id="products" className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-      <SectionHead eyebrow="Products" title="Every cover you need, in one place" desc="Choose a category to see plans, pricing and benefits." />
-      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {categories.map((c, i) => (
+      <SectionHead
+        eyebrow="Products"
+        title="Cover for every stage of life"
+        desc="Explore our six core insurance categories. Learn what each cover includes, who it suits, and get a personalised quote."
+      />
+      <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {products.map((p, i) => (
           <motion.div
-            key={c.title}
+            key={p.id}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.05 }}
           >
-            <Card className="group h-full border-transparent bg-card transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-elevated">
-              <CardContent className="p-6">
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
-                  <c.icon className="h-6 w-6" />
+            <Card className="group flex h-full flex-col border-transparent bg-card transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-elevated">
+              <CardContent className="flex flex-1 flex-col p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                    <p.icon className="h-6 w-6" />
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {p.tabs.length} options
+                  </Badge>
                 </div>
-                <h3 className="mt-4 font-semibold">{c.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{c.desc}</p>
-                <Button variant="link" className="mt-3 h-auto p-0 text-primary" asChild>
-                  <Link to="/quote">Learn more <ArrowRight className="ml-1 h-3 w-3" /></Link>
-                </Button>
+                <h3 className="mt-4 font-display text-lg font-semibold">{p.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{p.cardDesc}</p>
+                <p className="mt-3 text-xs italic text-foreground/70">{p.hook}</p>
+                <div className="mt-5 flex flex-1 flex-col justify-end gap-2 sm:flex-row">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setOpenProduct(p)}
+                  >
+                    Learn More
+                  </Button>
+                  <Button asChild className="flex-1 gradient-hero-bg text-primary-foreground">
+                    <Link to="/quote">
+                      Get Quote <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      <div className="mt-10 flex flex-col items-center justify-center gap-3 rounded-2xl border bg-gradient-to-br from-primary/5 to-secondary/5 p-6 text-center sm:flex-row sm:text-left">
+        <div className="flex-1">
+          <h3 className="font-display text-lg font-semibold">Not sure which cover is right for you?</h3>
+          <p className="text-sm text-muted-foreground">
+            Speak to a licensed Limiel Insurance advisor for guidance tailored to your needs.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="outline" asChild>
+            <Link to="/contact">
+              <MessageSquare className="mr-1.5 h-4 w-4" /> Speak to an Advisor
+            </Link>
+          </Button>
+          <Button asChild className="gradient-hero-bg text-primary-foreground">
+            <Link to="/quote">Request a Quote <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          </Button>
+        </div>
+      </div>
+
+      <ProductLearnMoreDialog
+        product={openProduct}
+        open={!!openProduct}
+        onOpenChange={(v) => !v && setOpenProduct(null)}
+      />
     </section>
   );
 }
+
 
 function QuoteCompare() {
   const [submitted, setSubmitted] = useState(false);
