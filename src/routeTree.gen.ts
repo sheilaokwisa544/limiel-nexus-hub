@@ -12,10 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuoteRouteImport } from './routes/quote'
-import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as ContactRouteImport } from './routes/contact'
-import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
@@ -39,11 +37,6 @@ const QuoteRoute = QuoteRouteImport.update({
   path: '/quote',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProvidersRoute = ProvidersRouteImport.update({
-  id: '/providers',
-  path: '/providers',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -52,11 +45,6 @@ const ProductsRoute = ProductsRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClaimsRoute = ClaimsRouteImport.update({
-  id: '/claims',
-  path: '/claims',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogRoute = BlogRouteImport.update({
@@ -99,10 +87,8 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
-  '/claims': typeof ClaimsRoute
   '/contact': typeof ContactRoute
   '/products': typeof ProductsRoute
-  '/providers': typeof ProvidersRoute
   '/quote': typeof QuoteRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -114,10 +100,8 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
-  '/claims': typeof ClaimsRoute
   '/contact': typeof ContactRoute
   '/products': typeof ProductsRoute
-  '/providers': typeof ProvidersRoute
   '/quote': typeof QuoteRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -131,10 +115,8 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
-  '/claims': typeof ClaimsRoute
   '/contact': typeof ContactRoute
   '/products': typeof ProductsRoute
-  '/providers': typeof ProvidersRoute
   '/quote': typeof QuoteRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -148,10 +130,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/blog'
-    | '/claims'
     | '/contact'
     | '/products'
-    | '/providers'
     | '/quote'
     | '/reset-password'
     | '/sitemap.xml'
@@ -163,10 +143,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/blog'
-    | '/claims'
     | '/contact'
     | '/products'
-    | '/providers'
     | '/quote'
     | '/reset-password'
     | '/sitemap.xml'
@@ -179,10 +157,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/blog'
-    | '/claims'
     | '/contact'
     | '/products'
-    | '/providers'
     | '/quote'
     | '/reset-password'
     | '/sitemap.xml'
@@ -196,10 +172,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   BlogRoute: typeof BlogRoute
-  ClaimsRoute: typeof ClaimsRoute
   ContactRoute: typeof ContactRoute
   ProductsRoute: typeof ProductsRoute
-  ProvidersRoute: typeof ProvidersRoute
   QuoteRoute: typeof QuoteRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -228,13 +202,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuoteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/providers': {
-      id: '/providers'
-      path: '/providers'
-      fullPath: '/providers'
-      preLoaderRoute: typeof ProvidersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/products': {
       id: '/products'
       path: '/products'
@@ -247,13 +214,6 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/claims': {
-      id: '/claims'
-      path: '/claims'
-      fullPath: '/claims'
-      preLoaderRoute: typeof ClaimsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog': {
@@ -327,10 +287,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   BlogRoute: BlogRoute,
-  ClaimsRoute: ClaimsRoute,
   ContactRoute: ContactRoute,
   ProductsRoute: ProductsRoute,
-  ProvidersRoute: ProvidersRoute,
   QuoteRoute: QuoteRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
