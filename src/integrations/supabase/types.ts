@@ -406,6 +406,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_requests: {
+        Row: {
+          created_at: string
+          details: Json
+          email: string
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          product: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          email: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          product: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          product?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           created_at: string
