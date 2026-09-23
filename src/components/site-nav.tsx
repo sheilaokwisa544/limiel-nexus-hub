@@ -22,8 +22,7 @@ export function SiteNav() {
   const links = [
     { to: "/", label: t("nav.home") },
     { to: "/products", label: t("nav.products") },
-    { to: "/providers", label: t("nav.providers") },
-    { to: "/claims", label: t("nav.claims") },
+    { to: "/explain", label: t("nav.explain") },
     { to: "/about", label: t("nav.about") },
     { to: "/blog", label: t("nav.blog") },
     { to: "/contact", label: t("nav.contact") },

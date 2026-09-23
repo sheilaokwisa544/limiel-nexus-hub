@@ -8,6 +8,7 @@ const en: Dict = {
   // nav
   "nav.home": "Home",
   "nav.products": "Products",
+  "nav.explain": "Explain My Cover",
   "nav.providers": "Providers",
   "nav.claims": "Claims",
   "nav.about": "About",
@@ -122,6 +123,7 @@ const en: Dict = {
 const sw: Dict = {
   "nav.home": "Nyumbani",
   "nav.products": "Bidhaa",
+  "nav.explain": "Fafanua Bima Yangu",
   "nav.providers": "Watoa Huduma",
   "nav.claims": "Madai",
   "nav.about": "Kuhusu",
