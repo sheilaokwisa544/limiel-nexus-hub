@@ -1,0 +1,5 @@
+- [ ] Redesign homepage with official brand assets and brochure content
+- [ ] Update navigation, footer, contact details, WhatsApp and factual company positioning
+- [ ] Align styling, fonts, favicon and metadata
+- [ ] Run SEO foundations review and address findings
+- [ ] Verify desktop and mobile preview
