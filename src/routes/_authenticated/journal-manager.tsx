@@ -98,7 +98,7 @@ function JournalAdmin() {
         <div>
           <p className="font-display text-xl font-bold">Agents only</p>
           <p className="mt-2 text-sm text-muted-foreground">This area is for Limiel agents and admins.</p>
-          <Button asChild className="mt-4"><Link to="/dashboard" search={{ section: "overview" }}>Back to dashboard</Link></Button>
+          <Button asChild className="mt-4"><Link to="/admin" search={{ section: "overview" }}>Back to dashboard</Link></Button>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ function JournalAdmin() {
             <h1 className="font-display text-3xl font-bold">Journal articles</h1>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline"><Link to="/dashboard" search={{ section: "overview" }}><ArrowLeft className="mr-1 h-4 w-4" /> Dashboard</Link></Button>
+            <Button asChild variant="outline"><Link to="/admin" search={{ section: "overview" }}><ArrowLeft className="mr-1 h-4 w-4" /> Dashboard</Link></Button>
             <Button className="gradient-hero-bg text-primary-foreground" onClick={() => setEdit({ ...blank })}><Plus className="mr-1 h-4 w-4" /> New article</Button>
           </div>
         </div>

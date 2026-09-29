@@ -107,7 +107,7 @@ export function SiteNav() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> {t("nav.dashboard")}</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/admin"><LayoutDashboard className="mr-2 h-4 w-4" /> Admin</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> {t("nav.signOut")}</DropdownMenuItem>
               </DropdownMenuContent>
@@ -137,7 +137,7 @@ export function SiteNav() {
               {LangToggle}
               {user ? (
                 <>
-                  <Button asChild variant="outline" className="flex-1"><Link to="/dashboard" onClick={() => setOpen(false)}>{t("nav.dashboard")}</Link></Button>
+                  <Button asChild variant="outline" className="flex-1"><Link to="/admin" onClick={() => setOpen(false)}>Admin</Link></Button>
                   <Button onClick={signOut} className="flex-1 gradient-hero-bg text-primary-foreground">{t("nav.signOut")}</Button>
                 </>
               ) : (
