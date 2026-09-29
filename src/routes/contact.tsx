@@ -27,16 +27,16 @@ function Contact() {
           <p className="mt-3 text-muted-foreground">We reply to every message within a business hour.</p>
           <div className="mt-8 space-y-4">
             {[
-              { icon: Mail, label: "hello@limiel.co", sub: "Email us anytime" },
-              { icon: Phone, label: "+254 700 000 000", sub: "Mon–Sat, 8am–8pm" },
-              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi" },
+              { icon: Mail, label: "limielInsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielInsurance@gmail.com" },
+              { icon: Phone, label: "0719 401 804", sub: "Call or WhatsApp", href: "tel:+254719401804" },
+              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi", href: "" },
             ].map((c) => (
               <div key={c.label} className="flex items-start gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                   <c.icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-semibold">{c.label}</p>
+                  {c.href ? <a href={c.href} className="cursor-pointer font-semibold hover:text-primary hover:underline">{c.label}</a> : <p className="font-semibold">{c.label}</p>}
                   <p className="text-sm text-muted-foreground">{c.sub}</p>
                 </div>
               </div>

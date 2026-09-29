@@ -86,7 +86,7 @@ async function downloadPolicyPdf(p: Row, client: string, payments: Row[]) {
   doc.setFontSize(18);
   doc.text("LIMIEL INSURANCE LIMITED", 14, 14);
   doc.setFontSize(9);
-  doc.text("Your security, our commitment.  |  +254 713 268 806  |  limielinsurance@gmail.com", 14, 22);
+  doc.text("Your security, our commitment.  |  0719 401 804  |  limielInsurance@gmail.com", 14, 22);
   doc.setTextColor(27, 46, 75);
   doc.setFontSize(14);
   doc.text("Policy Summary", 14, 42);
