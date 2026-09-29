@@ -199,7 +199,7 @@ function ExplainPage() {
         </a>
       </Button>
       <Button asChild variant="ghost">
-        <a href="tel:+254719401804">+254 713 268 806</a>
+        <a href="tel:+254719401804">0719 401 804</a>
       </Button>
     </div>
   );
