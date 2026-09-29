@@ -413,6 +413,138 @@ function Dashboard() {
   );
 }
 
+const QUOTE_STATUSES = ["new", "contacted", "quote_prepared", "converted", "closed"] as const;
+const quoteStatusLabel = (s: string) => s.replace(/_/g, " ");
+const waLink = (phone: string) => {
+  const d = phone.replace(/\D/g, "");
+  const intl = d.startsWith("0") ? `254${d.slice(1)}` : d;
+  return `https://wa.me/${intl}?text=${encodeURIComponent("Hello, this is Limiel Insurance following up on your quote request.")}`;
+};
+
+function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState<Row | null>(null);
+  const [status, setStatus] = useState("new");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [fProduct, setFProduct] = useState("all");
+  const [fStatus, setFStatus] = useState("all");
+
+  const products = useMemo(() => [...new Set(quotes.map((q) => q.product as string))].sort(), [quotes]);
+  const rows = quotes.filter((q) => {
+    const hay = `${q.id} ${q.full_name} ${q.phone} ${q.email}`.toLowerCase();
+    if (search && !hay.includes(search.toLowerCase())) return false;
+    if (fProduct !== "all" && q.product !== fProduct) return false;
+    if (fStatus !== "all" && q.status !== fStatus) return false;
+    return true;
+  });
+
+  const openQuote = (q: Row) => { setOpen(q); setStatus(q.status ?? "new"); setNotes(q.notes ?? ""); };
+
+  const save = async () => {
+    if (!open) return;
+    setSaving(true);
+    const { error } = await supabase.from("quote_requests").update({ status, notes: notes.trim() || null }).eq("id", open.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Quote updated");
+    setOpen(null);
+    qc.invalidateQueries({ queryKey: ["dash-data"] });
+  };
+
+  return (
+    <Card className="shadow-soft">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle>Quote requests ({rows.length})</CardTitle>
+        <div className="flex flex-wrap gap-2">
+          <Select value={fProduct} onValueChange={setFProduct}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="Product" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All products</SelectItem>
+              {products.map((p) => <SelectItem key={p} value={p} className="capitalize">{p.replace(/-/g, " ")}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {QUOTE_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{quoteStatusLabel(s)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-auto">
+        {rows.length === 0 ? <Empty text="No quote requests yet." /> : (
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Customer</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
+              <TableHead>Product</TableHead><TableHead>Submitted</TableHead><TableHead>Status</TableHead><TableHead />
+            </TableRow></TableHeader>
+            <TableBody>
+              {rows.map((q) => (
+                <TableRow key={q.id}>
+                  <TableCell className="font-medium">{q.full_name}<div className="font-mono text-xs text-muted-foreground">{String(q.id).slice(0, 8)}</div></TableCell>
+                  <TableCell>{q.phone}</TableCell>
+                  <TableCell className="max-w-[180px] truncate">{q.email}</TableCell>
+                  <TableCell className="capitalize">{String(q.product).replace(/-/g, " ")}</TableCell>
+                  <TableCell>{fmtDate(q.created_at)}</TableCell>
+                  <TableCell><Badge variant={q.status === "new" ? "secondary" : "outline"} className="capitalize">{quoteStatusLabel(q.status ?? "new")}</Badge></TableCell>
+                  <TableCell><Button variant="ghost" size="sm" onClick={() => openQuote(q)}>Open</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
+        <DialogContent className="max-w-lg">
+          {open && (
+            <>
+              <DialogHeader><DialogTitle>Quote from {open.full_name}</DialogTitle></DialogHeader>
+              <div className="grid gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <p><span className="text-muted-foreground">Product:</span> <span className="capitalize">{String(open.product).replace(/-/g, " ")}</span></p>
+                  <p><span className="text-muted-foreground">Submitted:</span> {new Date(open.created_at).toLocaleString("en-KE")}</p>
+                  <p><span className="text-muted-foreground">Phone:</span> {open.phone}</p>
+                  <p><span className="text-muted-foreground">Email:</span> {open.email}</p>
+                </div>
+                {open.details && Object.keys(open.details).length > 0 && (
+                  <div className="rounded-lg border p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover requested</p>
+                    {Object.entries(open.details as Record<string, unknown>).map(([k, v]) => (
+                      <p key={k}><span className="capitalize text-muted-foreground">{k.replace(/_/g, " ")}:</span> {String(v)}</p>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" asChild><a href={`tel:${open.phone}`}>Call</a></Button>
+                  <Button size="sm" variant="outline" asChild><a href={`mailto:${open.email}`}>Email</a></Button>
+                  <Button size="sm" variant="outline" asChild><a href={waLink(open.phone)} target="_blank" rel="noreferrer">WhatsApp</a></Button>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Status</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {QUOTE_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{quoteStatusLabel(s)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Internal notes</Label>
+                  <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for the team…" />
+                </div>
+                <Button onClick={save} disabled={saving} className="w-fit gradient-hero-bg text-primary-foreground">Save changes</Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 function SettingsPanel({ userId, email }: { userId: string; email: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
