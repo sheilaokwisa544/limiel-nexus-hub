@@ -15,6 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ChatWidget } from "@/components/chat-widget";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/integrations/supabase/client";
@@ -401,6 +404,7 @@ function Dashboard() {
               </CardContent>
             </Card>
           )}
+          {data && section === "quotes" && data.isStaff && <QuotesSection quotes={data.quotes} search={search} />}
           {data && section === "settings" && data.userId && <SettingsPanel userId={data.userId} email={data.user?.email ?? ""} />}
         </main>
       </div>
