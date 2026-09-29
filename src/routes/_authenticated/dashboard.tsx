@@ -293,7 +293,7 @@ function Dashboard() {
                 </Link>
               ))}
               {data?.isStaff && (
-                <Link to="/admin" className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted">
+                <Link to="/journal-manager" className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted">
                   <BookOpen className="h-4 w-4" /> Journal
                 </Link>
               )}
