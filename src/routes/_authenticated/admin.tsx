@@ -475,6 +475,8 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
   const [saving, setSaving] = useState(false);
   const [fProduct, setFProduct] = useState("all");
   const [fStatus, setFStatus] = useState("all");
+  const [fFrom, setFFrom] = useState("");
+  const [fTo, setFTo] = useState("");
 
   const products = useMemo(() => [...new Set(quotes.map((q) => q.product as string))].sort(), [quotes]);
   const rows = quotes.filter((q) => {
@@ -482,8 +484,12 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
     if (search && !hay.includes(search.toLowerCase())) return false;
     if (fProduct !== "all" && q.product !== fProduct) return false;
     if (fStatus !== "all" && q.status !== fStatus) return false;
+    const day = (q.created_at ?? "").slice(0, 10);
+    if (fFrom && day < fFrom) return false;
+    if (fTo && day > fTo) return false;
     return true;
   });
+  const hasFilters = fProduct !== "all" || fStatus !== "all" || fFrom || fTo;
 
   const openQuote = (q: Row) => { setOpen(q); setStatus(q.status ?? "new"); setNotes(q.notes ?? ""); };
 
@@ -518,10 +524,15 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
               {QUOTE_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{quoteStatusLabel(s)}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} className="w-40" aria-label="Submitted from" />
+          <Input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} className="w-40" aria-label="Submitted to" />
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={() => { setFProduct("all"); setFStatus("all"); setFFrom(""); setFTo(""); }}>Clear</Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="overflow-auto">
-        {rows.length === 0 ? <Empty text="No quote requests yet." /> : (
+        {rows.length === 0 ? <Empty text="No quote requests match the current filters." /> : (
           <Table>
             <TableHeader><TableRow>
               <TableHead>Product</TableHead><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
