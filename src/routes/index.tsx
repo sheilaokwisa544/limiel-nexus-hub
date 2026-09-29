@@ -40,11 +40,6 @@ const testimonials = [
   { name: "Grace Achieng", role: "Travel Blogger", quote: "Travel insurance for a 3-country trip was cheaper than a coffee. Highly recommend.", rating: 5 },
 ];
 
-const blogPosts = [
-  { title: "How to choose motor insurance in 2026", cat: "Guides", read: "5 min" },
-  { title: "Health insurance vs medical cover explained", cat: "Health", read: "7 min" },
-  { title: "5 things travel insurance actually covers", cat: "Travel", read: "4 min" },
-];
 
 const faqs = [
   { q: "How does Limiel make money?", a: "We earn a small commission from insurers when you buy a policy. You pay the same price as going direct." },

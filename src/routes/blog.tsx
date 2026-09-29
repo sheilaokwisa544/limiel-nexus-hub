@@ -48,7 +48,9 @@ function Blog() {
         <h1 className="mt-2 font-display text-4xl font-bold sm:text-5xl">The Limiel Journal</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">Plain-language guides on choosing, using and claiming on insurance in Kenya.</p>
 
-        {current ? (
+        {!isLoading && posts.length === 0 ? (
+          <p className="mx-auto mt-10 max-w-md rounded-lg border border-dashed p-10 text-center font-display text-xl font-semibold text-muted-foreground">Coming Soon</p>
+        ) : current ? (
           <article className="mx-auto mt-10 max-w-3xl">
             <Button variant="ghost" onClick={() => setOpen(null)}>← All articles</Button>
             {current.featured_image_url && <img src={current.featured_image_url} alt="" className="mt-4 h-72 w-full rounded-2xl object-cover" />}
