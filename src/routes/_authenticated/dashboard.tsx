@@ -405,7 +405,12 @@ function Dashboard() {
             </Card>
           )}
           {data && section === "quotes" && data.isStaff && <QuotesSection quotes={data.quotes} search={search} />}
-          {data && section === "settings" && data.userId && <SettingsPanel userId={data.userId} email={data.user?.email ?? ""} />}
+          {data && section === "settings" && data.userId && (
+            <div className="grid gap-6">
+              <SettingsPanel userId={data.userId} email={data.user?.email ?? ""} />
+              {data.isStaff && <TeamPanel />}
+            </div>
+          )}
         </main>
       </div>
       <ChatWidget />
@@ -571,6 +576,55 @@ function SettingsPanel({ userId, email }: { userId: string; email: string }) {
           <div className="grid gap-2"><Label htmlFor="n">Full name</Label><Input id="n" value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="grid gap-2"><Label htmlFor="p">Phone</Label><Input id="p" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+254…" /></div>
           <Button type="submit" disabled={saving} className="w-fit gradient-hero-bg text-primary-foreground">Save changes</Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TeamPanel() {
+  const qc = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "agent">("agent");
+  const [busy, setBusy] = useState(false);
+  const staff = useQuery({ queryKey: ["team-staff"], queryFn: () => listStaff() });
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await grantStaffRole({ data: { email: email.trim(), role } });
+      toast.success("Access granted");
+      setEmail("");
+      qc.invalidateQueries({ queryKey: ["team-staff"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not grant access");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card className="max-w-xl shadow-soft">
+      <CardHeader><CardTitle>Admin users</CardTitle></CardHeader>
+      <CardContent className="grid gap-4">
+        <ul className="divide-y text-sm">
+          {(staff.data ?? []).map((s) => (
+            <li key={`${s.userId}-${s.role}`} className="flex items-center justify-between py-2">
+              <div><p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.email}</p></div>
+              <Badge variant="secondary" className="capitalize">{s.role}</Badge>
+            </li>
+          ))}
+          {staff.data?.length === 0 && <li className="py-2 text-muted-foreground">No staff found.</li>}
+        </ul>
+        <form onSubmit={add} className="grid gap-3 border-t pt-4">
+          <p className="text-xs text-muted-foreground">Give an existing account admin or agent access. The person must sign up on the website first, then sign out and back in.</p>
+          <div className="grid gap-2"><Label htmlFor="te">Email</Label><Input id="te" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" /></div>
+          <div className="grid gap-2"><Label>Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as "admin" | "agent")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="agent">Agent</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" disabled={busy} className="w-fit gradient-hero-bg text-primary-foreground">Grant access</Button>
         </form>
       </CardContent>
     </Card>
