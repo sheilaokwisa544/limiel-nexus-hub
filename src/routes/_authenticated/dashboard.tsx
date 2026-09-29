@@ -176,6 +176,7 @@ function Dashboard() {
 
   const navItems: { id: Section; icon: any; label: string }[] = [
     { id: "overview", icon: LayoutDashboard, label: t("dash.overview") },
+    ...(data?.isStaff ? [{ id: "quotes" as Section, icon: FileText, label: "Quotes" }] : []),
     { id: "policies", icon: Shield, label: t("dash.policies") },
     { id: "claims", icon: FileText, label: t("dash.claims") },
     { id: "favorites", icon: Heart, label: t("dash.favorites") },
@@ -328,6 +329,13 @@ function Dashboard() {
                 <Stat title="Total policies" value={stats.total} icon={Clock} tint="from-accent to-primary" />
                 <Stat title="Open claims" value={stats.openClaims} icon={AlertCircle} tint="from-secondary to-primary" />
                 <Stat title="Payments received" value={kes(stats.paid)} icon={Wallet} tint="from-primary to-secondary" />
+                {data.isStaff && (
+                  <>
+                    <Stat title="New quote requests" value={data.quotes.filter((q) => q.status === "new").length} icon={FileText} tint="from-accent to-primary" />
+                    <Stat title="Total quote requests" value={data.quotes.length} icon={FileText} tint="from-primary to-primary-glow" />
+                    <Stat title="Converted quotes" value={data.quotes.filter((q) => q.status === "converted").length} icon={Shield} tint="from-secondary to-primary" />
+                  </>
+                )}
               </div>
               <Card className="shadow-soft">
                 <CardHeader className="flex flex-row items-center justify-between">
