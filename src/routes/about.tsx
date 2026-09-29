@@ -19,13 +19,14 @@ function About() {
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">About</p>
         <h1 className="mt-2 font-display text-4xl font-bold sm:text-5xl">Insurance, but simpler.</h1>
         <p className="mt-4 text-lg text-muted-foreground">
-          Limiel is Africa's smart insurance marketplace. We compare quotes from 20+ regulated insurers so you can buy the right cover in minutes — not days.
+          Limiel Insurance Limited is an independent Kenyan insurance brokerage. We compare options across
+          licensed underwriters, place you with the right cover, and stay with you through renewals and claims.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {[
-            { n: "250K+", l: "Customers protected" },
-            { n: "20+", l: "Regulated insurers" },
-            { n: "KES 1.2B", l: "Claims processed" },
+            { n: "Independent", l: "We work for you, not an insurer" },
+            { n: "Compare", l: "Options across licensed underwriters" },
+            { n: "Support", l: "From first quote to claim" },
           ].map((s) => (
             <Card key={s.l} className="shadow-soft">
               <CardContent className="p-6 text-center">
