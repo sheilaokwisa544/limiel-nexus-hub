@@ -29,7 +29,7 @@ function Contact() {
             {[
               { icon: Mail, label: "hello@limiel.co", sub: "Email us anytime" },
               { icon: Phone, label: "+254 700 000 000", sub: "Mon–Sat, 8am–8pm" },
-              { icon: MapPin, label: "Westlands, Nairobi", sub: "Come say hi" },
+              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi" },
             ].map((c) => (
               <div key={c.label} className="flex items-start gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">

@@ -1,100 +1,134 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { motion } from "motion/react";
 import {
-  Bell, Search, Download, FileText, Shield, TrendingUp, Wallet,
-  Clock, CheckCircle2, AlertCircle, Plus, Home, LayoutDashboard, Heart, Settings, LogOut,
+  Download, FileText, Shield, Wallet, Clock, AlertCircle, Plus, Home, LayoutDashboard,
+  Heart, Settings, LogOut, Search, BookOpen,
 } from "lucide-react";
-import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from "recharts";
+import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Bar, BarChart, Legend } from "recharts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatWidget } from "@/components/chat-widget";
+import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
+const SECTIONS = ["overview", "policies", "claims", "favorites", "payments", "settings"] as const;
+type Section = (typeof SECTIONS)[number];
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  validateSearch: z.object({ section: z.enum(SECTIONS).catch("overview").default("overview") }),
   component: Dashboard,
 });
 
-const policies = [
-  { id: "POL-001", type: "Motor", provider: "Britam", premium: 3200, status: "Active", renewal: "2026-09-14" },
-  { id: "POL-002", type: "Health", provider: "Jubilee", premium: 5800, status: "Active", renewal: "2026-11-02" },
-  { id: "POL-003", type: "Travel", provider: "APA", premium: 1200, status: "Expiring", renewal: "2026-08-01" },
-];
-const payments = [
-  { date: "2026-07-01", policy: "POL-001", amount: 3200, method: "M-Pesa", status: "Paid" },
-  { date: "2026-06-01", policy: "POL-002", amount: 5800, method: "Card", status: "Paid" },
-  { date: "2026-05-15", policy: "POL-003", amount: 1200, method: "M-Pesa", status: "Paid" },
-];
-const chartData = [
-  { m: "Jan", v: 8000 }, { m: "Feb", v: 8200 }, { m: "Mar", v: 9000 },
-  { m: "Apr", v: 9200 }, { m: "May", v: 10200 }, { m: "Jun", v: 10200 }, { m: "Jul", v: 10200 },
-];
+const kes = (n: number) => `KES ${Math.round(n).toLocaleString()}`;
+const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" }) : "—");
 
-function useCounter(to: number, ms = 900) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    let raf: number; const start = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / ms);
-      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [to, ms]);
-  return n;
-}
+type Row = Record<string, any>;
 
-const mockPolicies = [
-  { id: "POL-001", policy_number: "POL-001", type: "motor", provider: "Britam", monthly_premium: 3200, status: "active", renewal_date: "2026-09-14" },
-  { id: "POL-002", policy_number: "POL-002", type: "health", provider: "Jubilee", monthly_premium: 5800, status: "active", renewal_date: "2026-11-02" },
-  { id: "POL-003", policy_number: "POL-003", type: "travel", provider: "APA", monthly_premium: 1200, status: "expiring", renewal_date: "2026-08-01" },
-];
-
-function Dashboard() {
-  const nav = useNavigate();
+function useDashData() {
   const qc = useQueryClient();
-  const { t } = useI18n();
-  const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const u = data.user;
-      const name = (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0];
-      setUser({ email: u?.email, name });
-    });
-  }, []);
-
-  const { data: dbPolicies } = useQuery({
-    queryKey: ["policies"],
+  const q = useQuery({
+    queryKey: ["dash-data"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("policies")
-        .select("id, policy_number, type, status, monthly_premium, renewal_date, provider_id, providers(name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      const [{ data: u }, pol, pay, clm, fav, roles] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("policies").select("*, products(name), providers(name)").order("created_at", { ascending: false }),
+        supabase.from("payments").select("*").order("created_at", { ascending: false }),
+        supabase.from("claims").select("*").order("created_at", { ascending: false }),
+        supabase.from("favorites").select("*, products(name, type, base_premium)").order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("role"),
+      ]);
+      for (const r of [pol, pay, clm, fav]) if (r.error) throw r.error;
+      const userId = u.user?.id;
+      const myRoles = (roles.data ?? []).map((r) => r.role as string);
+      const isStaff = myRoles.some((r) => ["admin", "super_admin", "agent"].includes(r));
+      const ids = new Set<string>();
+      [pol.data, pay.data, clm.data, fav.data].forEach((l) => (l ?? []).forEach((r: Row) => ids.add(r.user_id)));
+      const { data: profs } = ids.size
+        ? await supabase.from("profiles").select("id, full_name, phone").in("id", [...ids])
+        : { data: [] as Row[] };
+      const people = new Map((profs ?? []).map((p: Row) => [p.id, p]));
+      return {
+        user: u.user, userId, isStaff,
+        policies: (pol.data ?? []) as Row[], payments: (pay.data ?? []) as Row[],
+        claims: (clm.data ?? []) as Row[], favorites: (fav.data ?? []) as Row[], people,
+      };
     },
   });
 
-  const policies = (dbPolicies && dbPolicies.length > 0)
-    ? dbPolicies.map((p: any) => ({
-        id: p.id, policy_number: p.policy_number, type: p.type, provider: p.providers?.name ?? "—",
-        monthly_premium: Number(p.monthly_premium), status: p.status, renewal_date: p.renewal_date,
-      }))
-    : mockPolicies;
+  useEffect(() => {
+    const ch = supabase
+      .channel("dash-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "policies" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "claims" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
+  return q;
+}
 
-  const active = useCounter(policies.filter((p) => p.status === "active").length);
-  const renewals = useCounter(policies.filter((p) => p.status === "expiring").length);
-  const claims = useCounter(2);
-  const totalPaid = useCounter(policies.reduce((s, p) => s + p.monthly_premium * 6, 0));
+async function downloadPolicyPdf(p: Row, client: string, payments: Row[]) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF();
+  doc.setFillColor(13, 43, 82);
+  doc.rect(0, 0, 210, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.text("LIMIEL INSURANCE LIMITED", 14, 14);
+  doc.setFontSize(9);
+  doc.text("Your security, our commitment.  |  +254 713 268 806  |  limielinsurance@gmail.com", 14, 22);
+  doc.setTextColor(27, 46, 75);
+  doc.setFontSize(14);
+  doc.text("Policy Summary", 14, 42);
+  doc.setFontSize(10);
+  const rows: [string, string][] = [
+    ["Policy reference", p.policy_number],
+    ["Client", client],
+    ["Product", p.products?.name ?? p.type],
+    ["Underwriter", p.providers?.name ?? "—"],
+    ["Cover type", String(p.type)],
+    ["Status", String(p.status)],
+    ["Start date", fmtDate(p.start_date)],
+    ["Renewal / end date", fmtDate(p.renewal_date)],
+    ["Monthly premium", kes(Number(p.monthly_premium))],
+    ["Sum assured", p.sum_assured ? kes(Number(p.sum_assured)) : "—"],
+  ];
+  let y = 52;
+  for (const [k, v] of rows) { doc.setFont("helvetica", "bold"); doc.text(k, 14, y); doc.setFont("helvetica", "normal"); doc.text(v, 70, y); y += 8; }
+  y += 4;
+  doc.setFontSize(12); doc.text("Payments", 14, y); y += 8; doc.setFontSize(10);
+  if (payments.length === 0) { doc.text("No payments recorded yet.", 14, y); y += 8; }
+  for (const pay of payments) {
+    doc.text(`${fmtDate(pay.paid_at ?? pay.created_at)}   ${kes(Number(pay.amount))}   ${pay.method}   ${pay.status}   ${pay.reference ?? ""}`, 14, y);
+    y += 7;
+  }
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text("Limiel Insurance Limited is an independent broker. Cover is underwritten by the insurer named above and is subject to the policy terms.", 14, 285);
+  doc.save(`${p.policy_number}.pdf`);
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{text}</p>;
+}
+
+function Dashboard() {
+  const nav = useNavigate({ from: "/dashboard" });
+  const { section } = Route.useSearch();
+  const qc = useQueryClient();
+  const { t } = useI18n();
+  const { data, isLoading, error } = useDashData();
+  const [search, setSearch] = useState("");
 
   const signOut = async () => {
     await qc.cancelQueries();
@@ -103,179 +137,259 @@ function Dashboard() {
     nav({ to: "/auth", replace: true });
   };
 
-  const displayName = user?.name ?? "there";
-  const initials = (user?.name ?? user?.email ?? "L I").split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+  const clientName = (id: string) => data?.people.get(id)?.full_name ?? "Client";
+  const displayName = (data?.user?.user_metadata?.full_name as string | undefined) ?? data?.user?.email?.split("@")[0] ?? "there";
+  const initials = displayName.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+
+  const policyById = useMemo(() => new Map((data?.policies ?? []).map((p) => [p.id, p])), [data]);
+  const match = (s: string) => !search || s.toLowerCase().includes(search.toLowerCase());
+
+  const stats = useMemo(() => {
+    const pol = data?.policies ?? [];
+    const pay = data?.payments ?? [];
+    const clm = data?.claims ?? [];
+    const paid = pay.filter((p) => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0);
+    const months: { m: string; policies: number; payments: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const inMonth = (iso: string) => { const x = new Date(iso); return `${x.getFullYear()}-${x.getMonth()}` === key; };
+      months.push({
+        m: d.toLocaleString("en", { month: "short" }),
+        policies: pol.filter((p) => inMonth(p.created_at)).length,
+        payments: pay.filter((p) => p.status === "paid" && inMonth(p.paid_at ?? p.created_at)).reduce((s, p) => s + Number(p.amount), 0),
+      });
+    }
+    return {
+      active: pol.filter((p) => p.status === "active").length,
+      total: pol.length,
+      paid,
+      openClaims: clm.filter((c) => !["paid", "rejected"].includes(c.status)).length,
+      months,
+    };
+  }, [data]);
+
+  const navItems: { id: Section; icon: any; label: string }[] = [
+    { id: "overview", icon: LayoutDashboard, label: t("dash.overview") },
+    { id: "policies", icon: Shield, label: t("dash.policies") },
+    { id: "claims", icon: FileText, label: t("dash.claims") },
+    { id: "favorites", icon: Heart, label: t("dash.favorites") },
+    { id: "payments", icon: Wallet, label: t("dash.payments") },
+    { id: "settings", icon: Settings, label: t("dash.settings") },
+  ];
+
+  const PoliciesTable = ({ limit }: { limit?: number }) => {
+    const rows = (data?.policies ?? []).filter((p) => match(`${p.policy_number} ${clientName(p.user_id)} ${p.products?.name ?? ""} ${p.type}`)).slice(0, limit);
+    if (rows.length === 0) return <Empty text="No policies yet." />;
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>Reference</TableHead>{data?.isStaff && <TableHead>Client</TableHead>}<TableHead>Product</TableHead>
+          <TableHead>Status</TableHead><TableHead>Start</TableHead><TableHead>End / renewal</TableHead><TableHead>Premium</TableHead><TableHead>Paid</TableHead><TableHead />
+        </TableRow></TableHeader>
+        <TableBody>
+          {rows.map((p) => {
+            const pays = (data?.payments ?? []).filter((x) => x.policy_id === p.id);
+            const paid = pays.filter((x) => x.status === "paid").reduce((s, x) => s + Number(x.amount), 0);
+            return (
+              <TableRow key={p.id}>
+                <TableCell className="font-medium">{p.policy_number}</TableCell>
+                {data?.isStaff && <TableCell>{clientName(p.user_id)}</TableCell>}
+                <TableCell>{p.products?.name ?? <span className="capitalize">{p.type}</span>}<div className="text-xs text-muted-foreground">{p.providers?.name}</div></TableCell>
+                <TableCell><Badge variant={p.status === "active" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge></TableCell>
+                <TableCell>{fmtDate(p.start_date)}</TableCell>
+                <TableCell>{fmtDate(p.renewal_date)}</TableCell>
+                <TableCell>{kes(Number(p.monthly_premium))}</TableCell>
+                <TableCell>{pays.length ? `${kes(paid)} (${pays.length})` : "—"}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => downloadPolicyPdf(p, clientName(p.user_id), pays).then(() => toast.success(t("dash.pdfDownloaded")))}>
+                    <Download className="mr-1 h-3.5 w-3.5" /> PDF
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  const PaymentsTable = ({ limit }: { limit?: number }) => {
+    const rows = (data?.payments ?? []).filter((p) => match(`${p.reference ?? ""} ${clientName(p.user_id)} ${policyById.get(p.policy_id)?.policy_number ?? ""}`)).slice(0, limit);
+    if (rows.length === 0) return <Empty text="No payments yet." />;
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>Date</TableHead>{data?.isStaff && <TableHead>Client</TableHead>}<TableHead>Policy</TableHead><TableHead>Amount</TableHead>
+          <TableHead>Method</TableHead><TableHead>Reference</TableHead><TableHead>Status</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {rows.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell>{fmtDate(p.paid_at ?? p.created_at)}</TableCell>
+              {data?.isStaff && <TableCell>{clientName(p.user_id)}</TableCell>}
+              <TableCell>{policyById.get(p.policy_id)?.policy_number ?? "—"}</TableCell>
+              <TableCell>{p.currency} {Number(p.amount).toLocaleString()}</TableCell>
+              <TableCell>{p.method}</TableCell>
+              <TableCell className="font-mono text-xs">{p.reference ?? "—"}</TableCell>
+              <TableCell><Badge variant={p.status === "paid" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  const ClaimsTable = ({ limit }: { limit?: number }) => {
+    const rows = (data?.claims ?? []).filter((c) => match(`${c.claim_number} ${clientName(c.user_id)}`)).slice(0, limit);
+    if (rows.length === 0) return <Empty text="No claims yet." />;
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>Claim</TableHead>{data?.isStaff && <TableHead>Client</TableHead>}<TableHead>Policy</TableHead><TableHead>Incident</TableHead>
+          <TableHead>Amount</TableHead><TableHead>Submitted</TableHead><TableHead>Status</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {rows.map((c) => (
+            <TableRow key={c.id}>
+              <TableCell className="font-medium">{c.claim_number}</TableCell>
+              {data?.isStaff && <TableCell>{clientName(c.user_id)}</TableCell>}
+              <TableCell>{policyById.get(c.policy_id)?.policy_number ?? "—"}</TableCell>
+              <TableCell>{fmtDate(c.incident_date)}</TableCell>
+              <TableCell>{c.amount ? kes(Number(c.amount)) : "—"}</TableCell>
+              <TableCell>{fmtDate(c.created_at)}</TableCell>
+              <TableCell><Badge variant="outline" className="capitalize">{String(c.status).replace("_", " ")}</Badge></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="mx-auto grid max-w-[1400px] gap-6 p-4 sm:p-6 lg:grid-cols-[240px_1fr]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-6 rounded-2xl border bg-card p-4 shadow-soft">
-            <Link to="/" className="flex items-center gap-2 px-2 pb-4 font-display font-bold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg gradient-hero-bg text-primary-foreground">
-                <Shield className="h-4 w-4" />
-              </span>
-              Limiel<span className="text-secondary">.</span>
-            </Link>
-            <nav className="space-y-1 text-sm">
-              {[
-                { icon: LayoutDashboard, label: t("dash.overview"), active: true },
-                { icon: Shield, label: t("dash.policies") },
-                { icon: FileText, label: t("dash.claims") },
-                { icon: Heart, label: t("dash.favorites") },
-                { icon: Wallet, label: t("dash.payments") },
-                { icon: Settings, label: t("dash.settings") },
-              ].map((n) => (
-                <button key={n.label} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${n.active ? "gradient-hero-bg text-primary-foreground shadow-soft" : "hover:bg-muted"}`}>
+        <aside>
+          <div className="rounded-2xl border bg-card p-4 shadow-soft lg:sticky lg:top-6">
+            <Link to="/" className="mb-4 block px-2"><BrandLogo /></Link>
+            <nav className="flex gap-1 overflow-x-auto text-sm lg:block lg:space-y-1">
+              {navItems.map((n) => (
+                <Link
+                  key={n.id}
+                  to="/dashboard"
+                  search={{ section: n.id }}
+                  className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 transition ${section === n.id ? "gradient-hero-bg text-primary-foreground shadow-soft" : "hover:bg-muted"}`}
+                >
                   <n.icon className="h-4 w-4" /> {n.label}
-                </button>
+                </Link>
               ))}
-              <Link to="/" className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
+              {data?.isStaff && (
+                <Link to="/admin" className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted">
+                  <BookOpen className="h-4 w-4" /> Journal
+                </Link>
+              )}
+              <Link to="/" className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted lg:mt-4">
                 <Home className="h-4 w-4" /> {t("dash.backToSite")}
               </Link>
-              <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted">
+              <button onClick={signOut} className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted lg:w-full">
                 <LogOut className="h-4 w-4" /> {t("dash.signOut")}
               </button>
             </nav>
           </div>
         </aside>
 
-        <main className="space-y-6">
-          <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
+        <main className="min-w-0 space-y-6">
+          <header className="flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">
               <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">{t("dash.welcome", { name: displayName })}</h1>
-              <p className="text-sm text-muted-foreground">{t("dash.subtitle")}</p>
+              <p className="text-sm text-muted-foreground">{data?.isStaff ? "Agent view — all clients" : t("dash.subtitle")}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="relative hidden sm:block">
+            <div className="flex items-center gap-2">
+              <div className="relative">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={t("dash.search")} className="w-56 pl-9" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("dash.search")} className="w-48 pl-9 sm:w-56" />
               </div>
-              <Button variant="outline" size="icon" aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-              </Button>
               <Avatar><AvatarFallback className="gradient-hero-bg text-primary-foreground">{initials}</AvatarFallback></Avatar>
             </div>
           </header>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat title={t("dash.stat.active")} value={active} icon={Shield} tint="from-primary to-primary-glow" mom={t("dash.mom")} />
-            <Stat title={t("dash.stat.renewals")} value={renewals} icon={Clock} tint="from-accent to-primary" mom={t("dash.mom")} />
-            <Stat title={t("dash.stat.claims")} value={claims} icon={AlertCircle} tint="from-secondary to-primary" mom={t("dash.mom")} />
-            <Stat title={t("dash.stat.paid")} value={`KES ${totalPaid.toLocaleString()}`} icon={Wallet} tint="from-primary to-secondary" mom={t("dash.mom")} />
-          </div>
+          {error && <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{(error as Error).message}</p>}
+          {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2 shadow-soft">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t("dash.premiumSpend")}</CardTitle>
-                <Badge variant="secondary">{t("dash.last7")}</Badge>
-              </CardHeader>
-              <CardContent className="h-72">
-                <ResponsiveContainer>
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="m" stroke="var(--color-muted-foreground)" fontSize={12} />
-                    <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />
-                    <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8 }} />
-                    <Area type="monotone" dataKey="v" stroke="var(--color-primary)" strokeWidth={2} fill="url(#g1)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          {data && section === "overview" && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat title={t("dash.stat.active")} value={stats.active} icon={Shield} tint="from-primary to-primary-glow" />
+                <Stat title="Total policies" value={stats.total} icon={Clock} tint="from-accent to-primary" />
+                <Stat title="Open claims" value={stats.openClaims} icon={AlertCircle} tint="from-secondary to-primary" />
+                <Stat title="Payments received" value={kes(stats.paid)} icon={Wallet} tint="from-primary to-secondary" />
+              </div>
+              <Card className="shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Policies & payments</CardTitle>
+                  <Badge variant="secondary">Last 6 months · live</Badge>
+                </CardHeader>
+                <CardContent className="h-72">
+                  {stats.total === 0 && data.payments.length === 0 ? (
+                    <Empty text="No policies or payments yet — the chart fills in as records are created." />
+                  ) : (
+                    <ResponsiveContainer>
+                      <BarChart data={stats.months}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                        <XAxis dataKey="m" stroke="var(--color-muted-foreground)" fontSize={12} />
+                        <YAxis yAxisId="l" allowDecimals={false} stroke="var(--color-muted-foreground)" fontSize={12} />
+                        <YAxis yAxisId="r" orientation="right" stroke="var(--color-muted-foreground)" fontSize={12} />
+                        <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8 }} />
+                        <Legend />
+                        <Bar yAxisId="l" dataKey="policies" name="New policies" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                        <Bar yAxisId="r" dataKey="payments" name="Payments (KES)" fill="var(--color-accent)" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Recent policies</CardTitle>
+                  <Button size="sm" asChild className="gradient-hero-bg text-primary-foreground"><Link to="/quote"><Plus className="mr-1 h-4 w-4" /> {t("dash.newPolicy")}</Link></Button>
+                </CardHeader>
+                <CardContent className="overflow-auto"><PoliciesTable limit={5} /></CardContent>
+              </Card>
+              <div className="grid gap-4 xl:grid-cols-2">
+                <Card className="shadow-soft"><CardHeader><CardTitle>Recent payments</CardTitle></CardHeader><CardContent className="overflow-auto"><PaymentsTable limit={5} /></CardContent></Card>
+                <Card className="shadow-soft"><CardHeader><CardTitle>Recent claims</CardTitle></CardHeader><CardContent className="overflow-auto"><ClaimsTable limit={5} /></CardContent></Card>
+              </div>
+            </>
+          )}
 
+          {data && section === "policies" && (
+            <Card className="shadow-soft"><CardHeader><CardTitle>{t("dash.policies")} ({data.policies.length})</CardTitle></CardHeader><CardContent className="overflow-auto"><PoliciesTable /></CardContent></Card>
+          )}
+          {data && section === "payments" && (
+            <Card className="shadow-soft"><CardHeader><CardTitle>{t("dash.payments")} ({data.payments.length})</CardTitle></CardHeader><CardContent className="overflow-auto"><PaymentsTable /></CardContent></Card>
+          )}
+          {data && section === "claims" && (
+            <Card className="shadow-soft"><CardHeader><CardTitle>{t("dash.claims")} ({data.claims.length})</CardTitle></CardHeader><CardContent className="overflow-auto"><ClaimsTable /></CardContent></Card>
+          )}
+          {data && section === "favorites" && (
             <Card className="shadow-soft">
-              <CardHeader><CardTitle>{t("dash.claimsStatus")}</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  { id: "CLM-441", status: t("dash.claim.approved"), color: "text-secondary", Icon: CheckCircle2 },
-                  { id: "CLM-440", status: t("dash.claim.review"), color: "text-accent", Icon: Clock },
-                  { id: "CLM-438", status: t("dash.claim.info"), color: "text-destructive", Icon: AlertCircle },
-                ].map((c) => (
-                  <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <c.Icon className={`h-5 w-5 ${c.color}`} />
-                      <div>
-                        <p className="text-sm font-semibold">{c.id}</p>
-                        <p className="text-xs text-muted-foreground">{t("dash.claim.detail")}</p>
+              <CardHeader><CardTitle>{t("dash.favorites")}</CardTitle></CardHeader>
+              <CardContent>
+                {data.favorites.length === 0 ? <Empty text="No saved products yet." /> : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {data.favorites.map((f) => (
+                      <div key={f.id} className="rounded-lg border p-4">
+                        <p className="font-semibold">{f.products?.name ?? "Product"}</p>
+                        <p className="text-xs capitalize text-muted-foreground">{f.products?.type}{data.isStaff ? ` · ${clientName(f.user_id)}` : ""}</p>
                       </div>
-                    </div>
-                    <span className={`text-xs font-medium ${c.color}`}>{c.status}</span>
+                    ))}
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
-          </div>
-
-          <Card className="shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>{t("dash.activePolicies")}</CardTitle>
-              <Button size="sm" asChild className="gradient-hero-bg text-primary-foreground">
-                <Link to="/quote"><Plus className="mr-1 h-4 w-4" /> {t("dash.newPolicy")}</Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("dash.col.policy")}</TableHead><TableHead>{t("dash.col.type")}</TableHead><TableHead>{t("dash.col.provider")}</TableHead>
-                    <TableHead>{t("dash.col.premium")}</TableHead><TableHead>{t("dash.col.renewal")}</TableHead><TableHead>{t("dash.col.status")}</TableHead><TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {policies.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.policy_number}</TableCell>
-                      <TableCell className="capitalize">{p.type}</TableCell>
-                      <TableCell>{p.provider}</TableCell>
-                      <TableCell>KES {p.monthly_premium.toLocaleString()}</TableCell>
-                      <TableCell>{p.renewal_date}</TableCell>
-                      <TableCell>
-                        <Badge variant={p.status === "active" ? "secondary" : "outline"} className="capitalize">{p.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => toast.success(t("dash.pdfDownloaded"))}>
-                          <Download className="mr-1 h-3.5 w-3.5" /> PDF
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft">
-            <CardHeader><CardTitle>{t("dash.paymentHistory")}</CardTitle></CardHeader>
-            <CardContent className="overflow-auto">
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>{t("dash.col.date")}</TableHead><TableHead>{t("dash.col.policy")}</TableHead><TableHead>{t("dash.col.amount")}</TableHead><TableHead>{t("dash.col.method")}</TableHead><TableHead>{t("dash.col.status")}</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {payments.map((p) => (
-                    <TableRow key={p.date}>
-                      <TableCell>{p.date}</TableCell>
-                      <TableCell>{p.policy}</TableCell>
-                      <TableCell>KES {p.amount.toLocaleString()}</TableCell>
-                      <TableCell>{p.method}</TableCell>
-                      <TableCell><Badge className="bg-secondary text-secondary-foreground">{p.status}</Badge></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <div className="text-center">
-            <Link to="/admin" className="text-sm text-primary underline">{t("dash.viewAdmin")}</Link>
-          </div>
+          )}
+          {data && section === "settings" && data.userId && <SettingsPanel userId={data.userId} email={data.user?.email ?? ""} />}
         </main>
       </div>
       <ChatWidget />
@@ -283,7 +397,39 @@ function Dashboard() {
   );
 }
 
-function Stat({ title, value, icon: Icon, tint, mom }: { title: string; value: React.ReactNode; icon: any; tint: string; mom: string }) {
+function SettingsPanel({ userId, email }: { userId: string; email: string }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    supabase.from("profiles").select("full_name, phone").eq("id", userId).maybeSingle().then(({ data }) => {
+      setName(data?.full_name ?? "");
+      setPhone(data?.phone ?? "");
+    });
+  }, [userId]);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ full_name: name.trim().slice(0, 120), phone: phone.trim().slice(0, 30) }).eq("id", userId);
+    setSaving(false);
+    if (error) toast.error(error.message); else toast.success("Profile saved");
+  };
+  return (
+    <Card className="max-w-xl shadow-soft">
+      <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
+      <CardContent>
+        <form onSubmit={save} className="grid gap-4">
+          <div className="grid gap-2"><Label>Email</Label><Input value={email} disabled /></div>
+          <div className="grid gap-2"><Label htmlFor="n">Full name</Label><Input id="n" value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="grid gap-2"><Label htmlFor="p">Phone</Label><Input id="p" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+254…" /></div>
+          <Button type="submit" disabled={saving} className="w-fit gradient-hero-bg text-primary-foreground">Save changes</Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ title, value, icon: Icon, tint }: { title: string; value: React.ReactNode; icon: any; tint: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="overflow-hidden shadow-soft">
@@ -292,7 +438,6 @@ function Stat({ title, value, icon: Icon, tint, mom }: { title: string; value: R
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
               <p className="mt-2 font-display text-2xl font-bold">{value}</p>
-              <p className="mt-1 flex items-center gap-1 text-xs text-secondary"><TrendingUp className="h-3 w-3" /> {mom}</p>
             </div>
             <div className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${tint} text-primary-foreground shadow-soft`}>
               <Icon className="h-5 w-5" />

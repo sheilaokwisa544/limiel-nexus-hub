@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X, Shield, Moon, Sun, LogOut, LayoutDashboard, Languages } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
+import { Menu, X, Moon, Sun, LogOut, LayoutDashboard, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,11 +75,8 @@ export function SiteNav() {
   return (
     <header className={cn("sticky top-0 z-50 w-full transition-all", scrolled ? "glass shadow-soft" : "bg-transparent")}>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-          <span className="grid h-9 w-9 place-items-center rounded-xl gradient-hero-bg text-primary-foreground shadow-soft">
-            <Shield className="h-5 w-5" />
-          </span>
-          <span>Limiel<span className="text-secondary">.</span></span>
+        <Link to="/" className="flex items-center" aria-label="Limiel Insurance home">
+          <BrandLogo />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
