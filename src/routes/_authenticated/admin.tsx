@@ -524,10 +524,15 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
               {QUOTE_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{quoteStatusLabel(s)}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} className="w-40" aria-label="Submitted from" />
+          <Input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} className="w-40" aria-label="Submitted to" />
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={() => { setFProduct("all"); setFStatus("all"); setFFrom(""); setFTo(""); }}>Clear</Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="overflow-auto">
-        {rows.length === 0 ? <Empty text="No quote requests yet." /> : (
+        {rows.length === 0 ? <Empty text="No quote requests match the current filters." /> : (
           <Table>
             <TableHeader><TableRow>
               <TableHead>Product</TableHead><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
