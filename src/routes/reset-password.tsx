@@ -34,7 +34,7 @@ function ResetPassword() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Password updated");
-    nav({ to: "/dashboard", replace: true });
+    nav({ to: "/admin", replace: true });
   };
 
   return (
