@@ -104,7 +104,7 @@ function Hero() {
             </Button>
           </div>
           <div className="mt-8 flex flex-wrap gap-6 text-sm text-white/85">
-            {["A+ rated insurers", "Instant PDF quotes", "No hidden fees"].map((s) => (
+            {["Instant PDF quotes", "No hidden fees"].map((s) => (
               <span key={s} className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> {s}</span>
             ))}
           </div>
@@ -324,18 +324,7 @@ function Blog() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
       <SectionHead eyebrow="Blog" title="Latest from our journal" desc="Guides and news to help you insure smarter." />
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
-        {blogPosts.map((p, i) => (
-          <Card key={p.title} className="group overflow-hidden shadow-soft transition hover:-translate-y-1 hover:shadow-elevated">
-            <div className={`h-40 ${["gradient-hero-bg", "gradient-accent-bg", "bg-secondary"][i]}`} />
-            <CardContent className="p-6">
-              <Badge variant="secondary">{p.cat}</Badge>
-              <h3 className="mt-3 font-display text-lg font-semibold group-hover:text-primary">{p.title}</h3>
-              <p className="mt-2 text-xs text-muted-foreground">{p.read} read</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <p className="mx-auto mt-10 max-w-md rounded-lg border border-dashed p-10 text-center font-display text-xl font-semibold text-muted-foreground">Coming Soon</p>
     </section>
   );
 }
@@ -364,16 +353,16 @@ function Contact() {
           <SectionHead align="left" eyebrow="Contact" title="Talk to an expert" desc="Real humans, ready to help you choose." />
           <div className="mt-8 space-y-4">
             {[
-              { icon: Mail, label: "hello@limiel.co", sub: "Email us anytime" },
-              { icon: Phone, label: "+254 700 000 000", sub: "Mon–Sat, 8am–8pm" },
-              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi" },
+              { icon: Mail, label: "limielInsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielInsurance@gmail.com" },
+              { icon: Phone, label: "0719 401 804", sub: "Call or WhatsApp", href: "tel:+254719401804" },
+              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi", href: "" },
             ].map((c) => (
               <div key={c.label} className="flex items-start gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                   <c.icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-semibold">{c.label}</p>
+                  {c.href ? <a href={c.href} className="cursor-pointer font-semibold hover:text-primary hover:underline">{c.label}</a> : <p className="font-semibold">{c.label}</p>}
                   <p className="text-sm text-muted-foreground">{c.sub}</p>
                 </div>
               </div>

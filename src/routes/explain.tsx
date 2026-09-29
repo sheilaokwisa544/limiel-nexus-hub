@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
 import { explainCoverage, type PolicyExplanation } from "@/lib/policy-explainer.functions";
 
-export const WHATSAPP_URL = `https://wa.me/254713268806?text=${encodeURIComponent(
+export const WHATSAPP_URL = `https://wa.me/254719401804?text=${encodeURIComponent(
   "Hello Limiel Insurance, I have a question about my insurance cover. Please assist me.",
 )}`;
 
@@ -199,7 +199,7 @@ function ExplainPage() {
         </a>
       </Button>
       <Button asChild variant="ghost">
-        <a href="tel:+254713268806">+254 713 268 806</a>
+        <a href="tel:+254719401804">+254 713 268 806</a>
       </Button>
     </div>
   );

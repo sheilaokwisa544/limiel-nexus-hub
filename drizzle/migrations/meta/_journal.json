@@ -15,6 +15,13 @@
       "when": 1790664375884,
       "tag": "0001_journal_and_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790665778065,
+      "tag": "0002_grant_has_role_execute",
+      "breakpoints": true
     }
   ]
 }
