@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import {
   Zap, ShieldCheck, Wallet, HeadphonesIcon,
-  Star, Quote, ArrowRight, Check, Mail, Phone, MapPin, MessageSquare,
+  ArrowRight, Check, Mail, Phone, MapPin, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,22 +22,22 @@ import heroImg from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  head: () => ({ meta: [
+    { title: "Limiel Insurance — Your Security, Our Commitment" },
+    { name: "description", content: "Independent Kenyan insurance brokerage. Motor, health, travel, life and business cover — we compare options across underwriters for you." },
+    { property: "og:title", content: "Limiel Insurance — Your Security, Our Commitment" },
+    { property: "og:description", content: "Motor, health, travel, life and business insurance from an independent Kenyan brokerage." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
 });
 
 
 const whyItems = [
-  { icon: Zap, title: "Fast Quotes", desc: "Compare 20+ insurers in under 60 seconds." },
-  { icon: ShieldCheck, title: "Trusted Insurers", desc: "Only regulated, top-rated providers." },
-  { icon: Wallet, title: "Affordable Premiums", desc: "Save up to 40% on your policy." },
-  { icon: HeadphonesIcon, title: "Instant Support", desc: "24/7 human help via chat, call, email." },
-];
-
-const partners = ["Britam", "Jubilee", "APA", "CIC", "Sanlam", "Old Mutual", "AAR", "Madison", "GA Insurance", "Heritage"];
-
-const testimonials = [
-  { name: "Amina Odhiambo", role: "Small Business Owner", quote: "Limiel saved me 35% on my fleet cover. The comparison was effortless.", rating: 5 },
-  { name: "David Mwangi", role: "Software Engineer", quote: "Got a health plan for my family in 10 minutes. Documents in my inbox instantly.", rating: 5 },
-  { name: "Grace Achieng", role: "Travel Blogger", quote: "Travel insurance for a 3-country trip was cheaper than a coffee. Highly recommend.", rating: 5 },
+  { icon: Zap, title: "Fast Quotes", desc: "Tell us what you need and our team comes back with options — fast." },
+  { icon: ShieldCheck, title: "Trusted Insurers", desc: "We only place you with licensed, regulated insurers." },
+  { icon: Wallet, title: "Cover That Fits", desc: "We compare options across underwriters to match your budget." },
+  { icon: HeadphonesIcon, title: "Personal Support", desc: "Real humans by chat, phone, WhatsApp and email." },
 ];
 
 
@@ -55,8 +55,6 @@ function HomePage() {
       <Hero />
       <Categories />
       <WhyChoose />
-      <Partners />
-      <Testimonials />
       <Blog />
       <FAQ />
       <Contact />
@@ -82,7 +80,7 @@ function Hero() {
           className="text-primary-foreground"
         >
           <Badge className="mb-4 border-white/30 bg-white/15 text-white backdrop-blur">
-            🇰🇪 Trusted by 250,000+ customers
+            Your security, our commitment
           </Badge>
           <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
             Compare Insurance Plans in Minutes
@@ -262,63 +260,10 @@ function WhyChoose() {
   );
 }
 
-function Partners() {
-  const doubled = [...partners, ...partners];
-  return (
-    <section className="border-y bg-card py-10">
-      <p className="text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        Backed by 20+ regulated insurers
-      </p>
-      <div className="mt-6 overflow-hidden">
-        <div className="flex w-max animate-marquee gap-12 px-4">
-          {doubled.map((p, i) => (
-            <div key={i} className="grid h-12 shrink-0 place-items-center whitespace-nowrap rounded-lg border bg-background px-6 font-display text-sm font-semibold text-muted-foreground">
-              {p}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Testimonials() {
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-      <SectionHead eyebrow="Testimonials" title="Loved by our customers" desc="Real stories from people who saved on insurance." />
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
-        {testimonials.map((t, i) => (
-          <motion.div
-            key={t.name}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <Card className="h-full shadow-soft">
-              <CardContent className="p-6">
-                <Quote className="h-8 w-8 text-primary/30" />
-                <p className="mt-3 text-sm leading-relaxed">{t.quote}</p>
-                <div className="mt-4 flex gap-0.5">
-                  {Array.from({ length: t.rating }).map((_, j) => <Star key={j} className="h-4 w-4 fill-accent text-accent" />)}
-                </div>
-                <div className="mt-4 border-t pt-4">
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Blog() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-      <SectionHead eyebrow="Blog" title="Latest from our journal" desc="Guides and news to help you insure smarter." />
+      <SectionHead eyebrow="Journal" title="The Limiel Journal" desc="Guides and news to help you insure smarter." />
       <p className="mx-auto mt-10 max-w-md rounded-lg border border-dashed p-10 text-center font-display text-xl font-semibold text-muted-foreground">Coming Soon</p>
     </section>
   );
@@ -348,7 +293,7 @@ function Contact() {
           <SectionHead align="left" eyebrow="Contact" title="Talk to an expert" desc="Real humans, ready to help you choose." />
           <div className="mt-8 space-y-4">
             {[
-              { icon: Mail, label: "limielInsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielInsurance@gmail.com" },
+              { icon: Mail, label: "limielinsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielinsurance@gmail.com" },
               { icon: Phone, label: "0719 401 804", sub: "Call or WhatsApp", href: "tel:+254719401804" },
               { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi", href: "" },
             ].map((c) => (

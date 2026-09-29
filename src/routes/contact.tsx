@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,10 @@ export const Route = createFileRoute("/contact")({
   head: () => ({ meta: [
     { title: "Contact Limiel Insurance" },
     { name: "description", content: "Get in touch with the Limiel team for quotes, claims and support." },
+    { property: "og:title", content: "Contact Limiel Insurance" },
+    { property: "og:description", content: "Call, WhatsApp or email the Limiel Insurance team in Nairobi." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
   ] }),
 });
 
@@ -27,8 +31,9 @@ function Contact() {
           <p className="mt-3 text-muted-foreground">We reply to every message within a business hour.</p>
           <div className="mt-8 space-y-4">
             {[
-              { icon: Mail, label: "limielInsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielInsurance@gmail.com" },
+              { icon: Mail, label: "limielinsurance@gmail.com", sub: "Email us anytime", href: "mailto:limielinsurance@gmail.com" },
               { icon: Phone, label: "0719 401 804", sub: "Call or WhatsApp", href: "tel:+254719401804" },
+              { icon: MessageCircle, label: "WhatsApp us", sub: "Chat with our team", href: "https://wa.me/254719401804" },
               { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi", href: "" },
             ].map((c) => (
               <div key={c.label} className="flex items-start gap-4">
