@@ -23,6 +23,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import { listStaff, grantStaffRole } from "@/lib/team.functions";
 
 const SECTIONS = ["overview", "quotes", "policies", "claims", "favorites", "payments", "settings"] as const;
 type Section = (typeof SECTIONS)[number];
