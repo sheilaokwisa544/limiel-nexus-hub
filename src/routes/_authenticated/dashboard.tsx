@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
-const SECTIONS = ["overview", "policies", "claims", "favorites", "payments", "settings"] as const;
+const SECTIONS = ["overview", "quotes", "policies", "claims", "favorites", "payments", "settings"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -48,6 +48,8 @@ function useDashData() {
         supabase.from("user_roles").select("role"),
       ]);
       for (const r of [pol, pay, clm, fav]) if (r.error) throw r.error;
+      const qt = await supabase.from("quote_requests").select("*").order("created_at", { ascending: false });
+      if (qt.error) throw qt.error;
       const userId = u.user?.id;
       const myRoles = (roles.data ?? []).map((r) => r.role as string);
       const isStaff = myRoles.some((r) => ["admin", "super_admin", "agent"].includes(r));
@@ -61,6 +63,7 @@ function useDashData() {
         user: u.user, userId, isStaff,
         policies: (pol.data ?? []) as Row[], payments: (pay.data ?? []) as Row[],
         claims: (clm.data ?? []) as Row[], favorites: (fav.data ?? []) as Row[], people,
+        quotes: (qt.data ?? []) as Row[],
       };
     },
   });
@@ -71,6 +74,7 @@ function useDashData() {
       .on("postgres_changes", { event: "*", schema: "public", table: "policies" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "claims" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "quote_requests" }, () => qc.invalidateQueries({ queryKey: ["dash-data"] }))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
