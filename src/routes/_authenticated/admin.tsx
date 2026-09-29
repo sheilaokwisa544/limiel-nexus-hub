@@ -444,6 +444,30 @@ const waLink = (phone: string) => {
   return `https://wa.me/${intl}?text=${encodeURIComponent("Hello, this is Limiel Insurance following up on your quote request.")}`;
 };
 
+const DETAIL_LABELS: Record<string, string> = {
+  vehicleType: "Vehicle type", makeModel: "Make and model", yearOfManufacture: "Year of manufacture",
+  vehicleValue: "Estimated value (KES)", registration: "Registration number", usage: "Use of vehicle",
+  coverPreference: "Cover you are considering", coverFor: "Who should be covered?", numberOfPeople: "Number of people",
+  ages: "Ages of those to be covered", coverNeeds: "Cover you need", budget: "Annual budget (KES)",
+  medicalConsiderations: "Existing medical considerations", age: "Your age", gender: "Gender",
+  sumAssured: "Cover amount (KES)", coverDuration: "Cover duration", purpose: "Main purpose of the cover",
+  dependants: "Dependants", childAge: "Child's current age", educationStage: "Education stage",
+  yearsToPayout: "Years until funds are needed", savingsGoal: "Target amount (KES)", contribution: "Preferred contribution",
+  guardianName: "Parent / guardian name", destination: "Destination(s)", departureDate: "Departure date",
+  returnDate: "Return date", travellers: "Number of travellers", travellerAges: "Traveller ages",
+  tripPurpose: "Purpose of trip", currentAge: "Current age", retirementAge: "Desired retirement age",
+  monthlyContribution: "Monthly contribution (KES)", contributionFrequency: "Contribution frequency",
+  objective: "Main objective", existingScheme: "Existing pension or NSSF details",
+  assets: "Assets requiring planning", estateValue: "Approximate estate value (KES)", protectionNeeds: "Protection you are considering",
+};
+const detailLabel = (k: string) => DETAIL_LABELS[k] ?? k.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+const detailValue = (v: unknown) => {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (Array.isArray(v)) return v.map(String).join(", ");
+  return String(v);
+};
+
 function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState<Row | null>(null);
@@ -471,9 +495,10 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Quote updated");
-    setOpen(null);
     qc.invalidateQueries({ queryKey: ["dash-data"] });
   };
+
+  const details = open ? (open.details && typeof open.details === "object" ? open.details as Record<string, unknown> : {}) : {};
 
   return (
     <Card className="shadow-soft">
@@ -500,19 +525,23 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
         {rows.length === 0 ? <Empty text="No quote requests yet." /> : (
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Customer</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
-              <TableHead>Product</TableHead><TableHead>Submitted</TableHead><TableHead>Status</TableHead><TableHead />
+              <TableHead>Product</TableHead><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
+              <TableHead>Submitted</TableHead><TableHead>Status</TableHead><TableHead />
             </TableRow></TableHeader>
             <TableBody>
               {rows.map((q) => (
-                <TableRow key={q.id}>
-                  <TableCell className="font-medium">{q.full_name}<div className="font-mono text-xs text-muted-foreground">{String(q.id).slice(0, 8)}</div></TableCell>
-                  <TableCell>{q.phone}</TableCell>
-                  <TableCell className="max-w-[180px] truncate">{q.email}</TableCell>
+                <TableRow key={q.id} className="cursor-pointer" onClick={() => openQuote(q)}>
                   <TableCell className="capitalize">{String(q.product).replace(/-/g, " ")}</TableCell>
+                  <TableCell className="font-medium">{q.full_name}</TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <a href={`tel:${q.phone}`} className="underline-offset-2 hover:underline">{q.phone}</a>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate" onClick={(e) => e.stopPropagation()}>
+                    <a href={`mailto:${q.email}`} className="underline-offset-2 hover:underline">{q.email}</a>
+                  </TableCell>
                   <TableCell>{fmtDate(q.created_at)}</TableCell>
                   <TableCell><Badge variant={q.status === "new" ? "secondary" : "outline"} className="capitalize">{quoteStatusLabel(q.status ?? "new")}</Badge></TableCell>
-                  <TableCell><Button variant="ghost" size="sm" onClick={() => openQuote(q)}>Open</Button></TableCell>
+                  <TableCell><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openQuote(q); }}>Open</Button></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -520,31 +549,48 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
         )}
       </CardContent>
 
-      <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
-        <DialogContent className="max-w-lg">
+      <Sheet open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
           {open && (
             <>
-              <DialogHeader><DialogTitle>Quote from {open.full_name}</DialogTitle></DialogHeader>
-              <div className="grid gap-3 text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  <p><span className="text-muted-foreground">Product:</span> <span className="capitalize">{String(open.product).replace(/-/g, " ")}</span></p>
-                  <p><span className="text-muted-foreground">Submitted:</span> {new Date(open.created_at).toLocaleString("en-KE")}</p>
-                  <p><span className="text-muted-foreground">Phone:</span> {open.phone}</p>
-                  <p><span className="text-muted-foreground">Email:</span> {open.email}</p>
-                </div>
-                {open.details && Object.keys(open.details).length > 0 && (
-                  <div className="rounded-lg border p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover requested</p>
-                    {Object.entries(open.details as Record<string, unknown>).map(([k, v]) => (
-                      <p key={k}><span className="capitalize text-muted-foreground">{k.replace(/_/g, " ")}:</span> {String(v)}</p>
-                    ))}
+              <SheetHeader>
+                <SheetTitle>Quote from {open.full_name}</SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  <span className="capitalize">{String(open.product).replace(/-/g, " ")}</span> · submitted {new Date(open.created_at).toLocaleString("en-KE")}
+                </p>
+              </SheetHeader>
+              <div className="mt-4 space-y-5 px-4 pb-6 text-sm">
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact</p>
+                  <div className="space-y-2">
+                    <p><span className="text-muted-foreground">Name:</span> {open.full_name}</p>
+                    <p><span className="text-muted-foreground">Phone:</span> <a href={`tel:${open.phone}`} className="font-medium underline-offset-2 hover:underline">{open.phone}</a></p>
+                    <p><span className="text-muted-foreground">Email:</span> <a href={`mailto:${open.email}`} className="font-medium underline-offset-2 hover:underline">{open.email}</a></p>
+                    <p><span className="text-muted-foreground">Status:</span> <span className="capitalize">{quoteStatusLabel(open.status ?? "new")}</span></p>
                   </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" asChild><a href={`tel:${open.phone}`}>Call</a></Button>
-                  <Button size="sm" variant="outline" asChild><a href={`mailto:${open.email}`}>Email</a></Button>
-                  <Button size="sm" variant="outline" asChild><a href={waLink(open.phone)} target="_blank" rel="noreferrer">WhatsApp</a></Button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" asChild><a href={`tel:${open.phone}`}>Call</a></Button>
+                    <Button size="sm" variant="outline" asChild><a href={`mailto:${open.email}`}>Email</a></Button>
+                    <Button size="sm" variant="outline" asChild><a href={waLink(open.phone)} target="_blank" rel="noreferrer">WhatsApp</a></Button>
+                  </div>
                 </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover requested</p>
+                  {Object.keys(details).length === 0 ? (
+                    <p className="text-muted-foreground">No details were provided with this request.</p>
+                  ) : (
+                    <dl className="divide-y">
+                      {Object.entries(details).map(([k, v]) => (
+                        <div key={k} className="grid grid-cols-[45%_55%] gap-2 py-2">
+                          <dt className="text-muted-foreground">{detailLabel(k)}</dt>
+                          <dd className="break-words whitespace-pre-line">{detailValue(v)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+
                 <div className="grid gap-2">
                   <Label>Status</Label>
                   <Select value={status} onValueChange={setStatus}>
@@ -562,8 +608,8 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
               </div>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
