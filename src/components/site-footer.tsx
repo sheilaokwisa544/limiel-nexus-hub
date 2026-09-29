@@ -1,19 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { Shield, Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
+import { Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react";
 
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t bg-card">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4">
         <div>
-          <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="grid h-9 w-9 place-items-center rounded-xl gradient-hero-bg text-primary-foreground">
-              <Shield className="h-5 w-5" />
-            </span>
-            Limiel<span className="text-secondary">.</span>
+          <Link to="/" className="flex items-center" aria-label="Limiel Insurance home">
+            <BrandLogo className="h-14" />
           </Link>
           <p className="mt-4 max-w-xs text-sm text-muted-foreground">
-            Africa's smart insurance marketplace. Compare, apply, and manage policies in minutes.
+            Independent Kenyan insurance brokerage. Real Towers, Upper Hill, Nairobi, Kenya.
           </p>
           <div className="mt-5 flex gap-3 text-muted-foreground">
             {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, i) => (

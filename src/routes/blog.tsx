@@ -1,48 +1,85 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/blog")({
   component: Blog,
-  head: () => ({ meta: [
-    { title: "Limiel Blog — Insurance Guides & News" },
-    { name: "description", content: "Guides, comparisons and industry news to help you insure smarter." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "The Limiel Journal — Insurance Guides for Kenya" },
+      { name: "description", content: "Plain-language guides on motor, health, travel and business insurance in Kenya from Limiel Insurance." },
+      { property: "og:title", content: "The Limiel Journal — Insurance Guides for Kenya" },
+      { property: "og:description", content: "Plain-language insurance guides from Limiel Insurance Limited." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
 });
 
-const posts = [
-  { title: "How to choose motor insurance in 2026", cat: "Guides", read: "5 min", excerpt: "The one-page checklist every driver should read before buying cover." },
-  { title: "Health insurance vs medical cover, explained", cat: "Health", read: "7 min", excerpt: "They sound the same, but they're wildly different. Here's what you need to know." },
-  { title: "5 things travel insurance actually covers", cat: "Travel", read: "4 min", excerpt: "Beyond lost bags: the surprising claims you can make on any policy." },
-  { title: "Life insurance for young families", cat: "Life", read: "6 min", excerpt: "Simple math to figure out how much cover you actually need." },
-  { title: "SME cover: liability isn't optional", cat: "Business", read: "8 min", excerpt: "Why every small business owner should read this before Friday." },
-  { title: "How claims really get approved", cat: "Claims", read: "5 min", excerpt: "The insider view: what adjusters look for and how to speed it up." },
-];
+type Post = { id: string; title: string; excerpt: string | null; content: string; category: string; author: string; featured_image_url: string | null; published_at: string | null };
 
 function Blog() {
+  const [open, setOpen] = useState<string | null>(null);
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["journal-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("journal_articles")
+        .select("id, title, excerpt, content, category, author, featured_image_url, published_at")
+        .eq("published", true)
+        .order("published_at", { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data as Post[];
+    },
+  });
+  const current = posts.find((p) => p.id === open);
+
   return (
     <div className="min-h-screen">
       <SiteNav />
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Blog</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Journal</p>
         <h1 className="mt-2 font-display text-4xl font-bold sm:text-5xl">The Limiel Journal</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Everything we know about buying, comparing and claiming insurance — shared.</p>
+        <p className="mt-3 max-w-2xl text-muted-foreground">Plain-language guides on choosing, using and claiming on insurance in Kenya.</p>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((p, i) => (
-            <Card key={p.title} className="group overflow-hidden shadow-soft transition hover:-translate-y-1 hover:shadow-elevated">
-              <div className={`h-40 ${["gradient-hero-bg", "gradient-accent-bg", "bg-secondary"][i % 3]}`} />
-              <CardContent className="p-6">
-                <Badge variant="secondary">{p.cat}</Badge>
-                <h3 className="mt-3 font-display text-lg font-semibold group-hover:text-primary">{p.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{p.excerpt}</p>
-                <p className="mt-3 text-xs text-muted-foreground">{p.read} read</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {current ? (
+          <article className="mx-auto mt-10 max-w-3xl">
+            <Button variant="ghost" onClick={() => setOpen(null)}>← All articles</Button>
+            {current.featured_image_url && <img src={current.featured_image_url} alt="" className="mt-4 h-72 w-full rounded-2xl object-cover" />}
+            <Badge variant="secondary" className="mt-6">{current.category}</Badge>
+            <h2 className="mt-3 font-display text-3xl font-bold">{current.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{current.author} · {current.published_at}</p>
+            <div className="mt-6 space-y-4 leading-relaxed">
+              {current.content.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
+            </div>
+          </article>
+        ) : (
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {!isLoading && posts.length === 0 && <p className="col-span-full rounded-lg border border-dashed p-10 text-center text-muted-foreground">No articles published yet — check back soon.</p>}
+            {posts.map((p, i) => (
+              <Card key={p.id} className="group cursor-pointer overflow-hidden shadow-soft transition hover:-translate-y-1 hover:shadow-elevated" onClick={() => setOpen(p.id)}>
+                {p.featured_image_url ? (
+                  <img src={p.featured_image_url} alt="" className="h-40 w-full object-cover" />
+                ) : (
+                  <div className={`h-40 ${["gradient-hero-bg", "gradient-accent-bg", "bg-secondary"][i % 3]}`} />
+                )}
+                <CardContent className="p-6">
+                  <Badge variant="secondary">{p.category}</Badge>
+                  <h3 className="mt-3 font-display text-lg font-semibold group-hover:text-primary">{p.title}</h3>
+                  {p.excerpt && <p className="mt-2 text-sm text-muted-foreground">{p.excerpt}</p>}
+                  <p className="mt-3 text-xs text-muted-foreground">{p.author} · {p.published_at}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
       <SiteFooter />
     </div>

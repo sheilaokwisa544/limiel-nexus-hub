@@ -59,7 +59,6 @@ function HomePage() {
       <SiteNav />
       <Hero />
       <Categories />
-      <QuoteCompare />
       <WhyChoose />
       <Partners />
       <Testimonials />
@@ -101,7 +100,7 @@ function Hero() {
               <Link to="/quote">Get Quote <ArrowRight className="ml-1 h-4 w-4" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/40 bg-white/10 text-white backdrop-blur hover:bg-white/20">
-              <a href="#compare">Compare Plans</a>
+              <Link to="/products">Explore Cover</Link>
             </Button>
           </div>
           <div className="mt-8 flex flex-wrap gap-6 text-sm text-white/85">
@@ -242,84 +241,6 @@ function Categories() {
 }
 
 
-function QuoteCompare() {
-  const [submitted, setSubmitted] = useState(false);
-  const quotes = [
-    { name: "Britam", premium: 3200, coverage: "Comprehensive", benefits: ["Towing", "Windscreen", "PA Cover"], color: "from-primary to-primary-glow" },
-    { name: "Jubilee", premium: 2950, coverage: "Comprehensive", benefits: ["24/7 Assist", "Courtesy Car", "Excess waiver"], color: "from-secondary to-primary" },
-    { name: "APA", premium: 3450, coverage: "Comprehensive Plus", benefits: ["Agreed Value", "Terrorism", "Political Risk"], color: "from-accent to-primary" },
-  ];
-  return (
-    <section id="compare" className="bg-gradient-to-b from-muted/40 to-background py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <SectionHead eyebrow="Compare" title="Real quotes from real insurers" desc="Fill in a few details and see side-by-side pricing." />
-        <div className="mt-12 grid gap-8 lg:grid-cols-[380px_1fr]">
-          <Card className="shadow-soft">
-            <CardContent className="p-6">
-              <form
-                onSubmit={(e) => { e.preventDefault(); setSubmitted(true); toast.success("3 quotes ready"); }}
-                className="space-y-4"
-              >
-                <div>
-                  <Label>Insurance Type</Label>
-                  <Select defaultValue="motor">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["Motor","Health","Travel","Life","Home","Business"].map((c) => (
-                        <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Age</Label><Input type="number" placeholder="32" /></div>
-                  <div><Label>Location</Label><Input placeholder="Nairobi" /></div>
-                </div>
-                <div><Label>Vehicle details</Label><Input placeholder="Toyota Vitz 2019" /></div>
-                <div><Label>Budget (KES / month)</Label><Input type="number" placeholder="3000" /></div>
-                <Button type="submit" className="w-full gradient-hero-bg text-primary-foreground">Show Quotes</Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4">
-            {quotes.map((q, i) => (
-              <motion.div
-                key={q.name}
-                initial={{ opacity: 0, x: 24 }}
-                animate={submitted ? { opacity: 1, x: 0 } : { opacity: 0.5, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card className="overflow-hidden shadow-soft transition hover:shadow-elevated">
-                  <CardContent className="grid gap-4 p-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                    <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${q.color} font-display text-lg font-bold text-white`}>
-                      {q.name[0]}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="font-semibold">{q.name}</h4>
-                        <Badge variant="secondary">{q.coverage}</Badge>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {q.benefits.map((b) => <span key={b} className="flex items-center gap-1"><Check className="h-3 w-3 text-secondary" /> {b}</span>)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display text-2xl font-bold text-primary">KES {q.premium.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">per month</p>
-                      <Button size="sm" className="mt-2 gradient-hero-bg text-primary-foreground">Apply</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function WhyChoose() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
@@ -445,7 +366,7 @@ function Contact() {
             {[
               { icon: Mail, label: "hello@limiel.co", sub: "Email us anytime" },
               { icon: Phone, label: "+254 700 000 000", sub: "Mon–Sat, 8am–8pm" },
-              { icon: MapPin, label: "Westlands, Nairobi", sub: "Come say hi" },
+              { icon: MapPin, label: "Real Towers, Upper Hill, Nairobi, Kenya", sub: "Come say hi" },
             ].map((c) => (
               <div key={c.label} className="flex items-start gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">

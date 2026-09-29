@@ -1,140 +1,168 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
-import { Users, Wallet, ShieldCheck, AlertCircle, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Pencil, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  component: Admin,
+  component: JournalAdmin,
 });
 
-const monthly = [
-  { m: "Jan", policies: 240, revenue: 320 },
-  { m: "Feb", policies: 280, revenue: 380 },
-  { m: "Mar", policies: 320, revenue: 420 },
-  { m: "Apr", policies: 360, revenue: 500 },
-  { m: "May", policies: 410, revenue: 560 },
-  { m: "Jun", policies: 470, revenue: 620 },
-  { m: "Jul", policies: 520, revenue: 710 },
-];
-const mix = [
-  { name: "Motor", value: 42 },
-  { name: "Health", value: 28 },
-  { name: "Travel", value: 12 },
-  { name: "Life", value: 10 },
-  { name: "Business", value: 8 },
-];
-const COLORS = ["var(--color-primary)", "var(--color-secondary)", "var(--color-accent)", "var(--color-chart-4)", "var(--color-chart-5)"];
-const applications = [
-  { id: "APP-9821", name: "Kelvin Otieno", type: "Motor", amount: 3200, status: "Pending" },
-  { id: "APP-9820", name: "Grace Wanjiku", type: "Health", amount: 5800, status: "Approved" },
-  { id: "APP-9819", name: "David Njoroge", type: "Travel", amount: 1200, status: "Review" },
-  { id: "APP-9818", name: "Amina Yusuf", type: "Business", amount: 12400, status: "Approved" },
-];
+type Article = {
+  id?: string; title: string; slug: string; excerpt: string | null; content: string; category: string;
+  author: string; featured_image_url: string | null; published: boolean; published_at: string | null;
+};
 
-function Admin() {
+const blank: Article = {
+  title: "", slug: "", excerpt: "", content: "", category: "Guides", author: "Limiel Insurance",
+  featured_image_url: "", published: false, published_at: new Date().toISOString().slice(0, 10),
+};
+
+const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 80);
+
+function JournalAdmin() {
+  const qc = useQueryClient();
+  const [edit, setEdit] = useState<Article | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { data: roleOk } = useQuery({
+    queryKey: ["is-staff"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role");
+      return (data ?? []).some((r) => ["admin", "super_admin", "agent"].includes(r.role));
+    },
+  });
+  const { data: articles = [], isLoading } = useQuery({
+    queryKey: ["journal-admin"],
+    enabled: roleOk === true,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("journal_articles").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as (Article & { id: string })[];
+    },
+  });
+
+  const refresh = () => { qc.invalidateQueries({ queryKey: ["journal-admin"] }); qc.invalidateQueries({ queryKey: ["journal-public"] }); };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!edit) return;
+    if (!edit.title.trim() || !edit.content.trim()) { toast.error("Title and content are required."); return; }
+    setSaving(true);
+    const row = {
+      title: edit.title.trim().slice(0, 200),
+      slug: slugify(edit.slug || edit.title) || crypto.randomUUID().slice(0, 8),
+      excerpt: edit.excerpt?.trim() || null,
+      content: edit.content,
+      category: edit.category.trim() || "Guides",
+      author: edit.author.trim() || "Limiel Insurance",
+      featured_image_url: edit.featured_image_url?.trim() || null,
+      published: edit.published,
+      published_at: edit.published_at || null,
+    };
+    const res = edit.id
+      ? await supabase.from("journal_articles").update(row).eq("id", edit.id)
+      : await supabase.from("journal_articles").insert(row);
+    setSaving(false);
+    if (res.error) { toast.error(res.error.message); return; }
+    toast.success("Article saved");
+    setEdit(null);
+    refresh();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this article?")) return;
+    const { error } = await supabase.from("journal_articles").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Deleted"); refresh(); }
+  };
+
+  const togglePublish = async (a: Article & { id: string }) => {
+    const { error } = await supabase.from("journal_articles").update({
+      published: !a.published,
+      published_at: a.published_at ?? new Date().toISOString().slice(0, 10),
+    }).eq("id", a.id);
+    if (error) toast.error(error.message); else refresh();
+  };
+
+  if (roleOk === false) {
+    return (
+      <div className="grid min-h-screen place-items-center p-6 text-center">
+        <div>
+          <p className="font-display text-xl font-bold">Agents only</p>
+          <p className="mt-2 text-sm text-muted-foreground">This area is for Limiel agents and admins.</p>
+          <Button asChild className="mt-4"><Link to="/dashboard" search={{ section: "overview" }}>Back to dashboard</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
-      <div className="mx-auto max-w-[1400px] space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Admin</p>
-            <h1 className="font-display text-3xl font-bold">Operations dashboard</h1>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Agent tools</p>
+            <h1 className="font-display text-3xl font-bold">Journal articles</h1>
           </div>
-          <Button asChild variant="outline"><Link to="/dashboard"><ArrowLeft className="mr-1 h-4 w-4" /> Customer view</Link></Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline"><Link to="/dashboard" search={{ section: "overview" }}><ArrowLeft className="mr-1 h-4 w-4" /> Dashboard</Link></Button>
+            <Button className="gradient-hero-bg text-primary-foreground" onClick={() => setEdit({ ...blank })}><Plus className="mr-1 h-4 w-4" /> New article</Button>
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <AdminStat title="Policies Sold" value="2,610" delta="+18%" icon={ShieldCheck} tint="from-primary to-primary-glow" />
-          <AdminStat title="Revenue" value="KES 3.5M" delta="+22%" icon={Wallet} tint="from-secondary to-primary" />
-          <AdminStat title="Active Customers" value="18,420" delta="+9%" icon={Users} tint="from-accent to-primary" />
-          <AdminStat title="Pending Claims" value="47" delta="-6%" icon={AlertCircle} tint="from-primary to-secondary" />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Policies vs Revenue</CardTitle>
-              <Badge variant="secondary">YTD</Badge>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer>
-                <BarChart data={monthly}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis dataKey="m" stroke="var(--color-muted-foreground)" fontSize={12} />
-                  <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />
-                  <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8 }} />
-                  <Legend />
-                  <Bar dataKey="policies" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="revenue" fill="var(--color-secondary)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
+        {edit && (
           <Card className="shadow-soft">
-            <CardHeader><CardTitle>Product mix</CardTitle></CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={mix} dataKey="value" innerRadius={55} outerRadius={90} paddingAngle={3}>
-                    {mix.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8 }} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardHeader><CardTitle>{edit.id ? "Edit article" : "New article"}</CardTitle></CardHeader>
+            <CardContent>
+              <form onSubmit={save} className="grid gap-4">
+                <div className="grid gap-2"><Label>Title</Label><Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} maxLength={200} /></div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-2"><Label>Category</Label><Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} /></div>
+                  <div className="grid gap-2"><Label>Author</Label><Input value={edit.author} onChange={(e) => setEdit({ ...edit, author: e.target.value })} /></div>
+                  <div className="grid gap-2"><Label>Publication date</Label><Input type="date" value={edit.published_at ?? ""} onChange={(e) => setEdit({ ...edit, published_at: e.target.value })} /></div>
+                </div>
+                <div className="grid gap-2"><Label>Featured image URL</Label><Input value={edit.featured_image_url ?? ""} onChange={(e) => setEdit({ ...edit, featured_image_url: e.target.value })} placeholder="https://…" /></div>
+                <div className="grid gap-2"><Label>Short summary</Label><Textarea rows={2} value={edit.excerpt ?? ""} onChange={(e) => setEdit({ ...edit, excerpt: e.target.value })} /></div>
+                <div className="grid gap-2"><Label>Content</Label><Textarea rows={12} value={edit.content} onChange={(e) => setEdit({ ...edit, content: e.target.value })} placeholder="Write the article. Blank lines start new paragraphs." /></div>
+                <label className="flex items-center gap-3 text-sm"><Switch checked={edit.published} onCheckedChange={(v) => setEdit({ ...edit, published: v })} /> Published</label>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={saving} className="gradient-hero-bg text-primary-foreground">Save</Button>
+                  <Button type="button" variant="ghost" onClick={() => setEdit(null)}>Cancel</Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
-        </div>
+        )}
 
         <Card className="shadow-soft">
-          <CardHeader><CardTitle>Recent applications</CardTitle></CardHeader>
-          <CardContent className="overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>ID</TableHead><TableHead>Customer</TableHead><TableHead>Type</TableHead><TableHead>Premium</TableHead><TableHead>Status</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {applications.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-medium">{a.id}</TableCell>
-                    <TableCell>{a.name}</TableCell>
-                    <TableCell>{a.type}</TableCell>
-                    <TableCell>KES {a.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={a.status === "Approved" ? "secondary" : a.status === "Pending" ? "outline" : "default"}>
-                        {a.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <CardContent className="divide-y p-0">
+            {isLoading && <p className="p-6 text-sm text-muted-foreground">Loading…</p>}
+            {!isLoading && articles.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No articles yet.</p>}
+            {articles.map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">{a.title}</p>
+                  <p className="text-xs text-muted-foreground">{a.category} · {a.author} · {a.published_at ?? "no date"}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={a.published ? "secondary" : "outline"}>{a.published ? "Published" : "Draft"}</Badge>
+                  <Button size="icon" variant="ghost" aria-label="Toggle publish" onClick={() => togglePublish(a)}>{a.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
+                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEdit({ ...a })}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Delete" onClick={() => remove(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-}
-
-function AdminStat({ title, value, delta, icon: Icon, tint }: any) {
-  return (
-    <Card className="shadow-soft">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
-            <p className="mt-2 font-display text-2xl font-bold">{value}</p>
-            <p className="mt-1 text-xs text-secondary">{delta} vs last month</p>
-          </div>
-          <div className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${tint} text-primary-foreground shadow-soft`}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
