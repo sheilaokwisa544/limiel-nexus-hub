@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Explain My Cover: PDF/image upload analyzed by AI, highlighted quotes, "not legal advice" disclaimer
-- [ ] Prompt 1: Agent dashboard sections (Overview, Policies, Claims, Favorites, Payments, Settings) on real data, chart, policy PDF per policy, remove mock data
-- [ ] Prompt 2: Explain assistant grounded in Limiel product info, fallback line, WhatsApp button
-- [ ] Prompt 3: Journal CRUD (admin) + public list; logo everywhere; location "Real Towers, Upper Hill, Nairobi, Kenya"; remove "Real Quotes from Insurers" section
+- [x] Explain My Cover: PDF/image upload, highlighted policy wording, "not legal advice" disclaimer
+- [x] Prompt 1: Dashboard sections on real data with live updates, real chart, per-policy PDF, mock data removed
+- [x] Prompt 2: Assistant grounded in Limiel product info, "unable to confirm" fallback, WhatsApp button
+- [x] Prompt 3: Journal manager for agents + public Journal; official logo; Real Towers address; "Real quotes" section removed
+- [ ] Journal image uploads (currently paste an image link) — blocked: workspace setting blocks public file storage

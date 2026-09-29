@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Dashboard reads Supabase directly (RLS scopes customer vs staff) and live-refreshes via Realtime on policies/payments/claims; section is a ?section= search param. Why: one screen serves customers and agents.
