@@ -531,6 +531,54 @@ export type Database = {
           },
         ]
       }
+      support_conversations: {
+        Row: {
+          access_token: string
+          created_at: string
+          email: string
+          follow_up_required: boolean
+          id: string
+          last_interaction_at: string
+          messages: Json
+          name: string | null
+          notes: string | null
+          phone: string | null
+          product: string | null
+          quote_requested: boolean
+          status: string
+        }
+        Insert: {
+          access_token?: string
+          created_at?: string
+          email: string
+          follow_up_required?: boolean
+          id?: string
+          last_interaction_at?: string
+          messages?: Json
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          product?: string | null
+          quote_requested?: boolean
+          status?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          email?: string
+          follow_up_required?: boolean
+          id?: string
+          last_interaction_at?: string
+          messages?: Json
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          product?: string | null
+          quote_requested?: boolean
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

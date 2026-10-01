@@ -36,6 +36,13 @@
       "when": 1790666959050,
       "tag": "0004_staff_update_quote_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790874854910,
+      "tag": "0005_support_conversations",
+      "breakpoints": true
     }
   ]
 }

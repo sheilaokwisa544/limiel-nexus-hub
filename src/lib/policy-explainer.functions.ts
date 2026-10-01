@@ -62,7 +62,7 @@ const schema = {
   required: ["summary", "covered", "exclusions", "nextSteps", "questionsForInsurer", "highlights", "confident", "confidenceNote"],
 } as const;
 
-function limielKnowledge() {
+export function limielKnowledge() {
   return products
     .map((p) => {
       const tabs = p.tabs
