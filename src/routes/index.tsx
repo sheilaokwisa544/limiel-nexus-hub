@@ -41,11 +41,16 @@ const whyItems = [
 ];
 
 
-const faqs = [
-  { q: "How does Limiel make money?", a: "We earn a small commission from insurers when you buy a policy. You pay the same price as going direct." },
-  { q: "Are my details safe?", a: "Yes. We use bank-grade encryption and only share your info with insurers you request quotes from." },
-  { q: "How fast will I get a quote?", a: "Most quotes are instant. Complex products may take up to 15 minutes." },
-  { q: "Can I cancel my policy?", a: "Yes, most policies have a 14-day cooling-off period. Terms vary by insurer." },
+const faqs: { q: string; a: React.ReactNode }[] = [
+  { q: "How much will it cost me to get covered?", a: "The cost of getting coverage depends on several factors such as age, and medical plan of choice. To get an estimate of the medical premium you would be expected to pay, we offer an online premium calculator which can provide a quick and easy quote based on your specific requirements. This can be accessed on our website or by contacting one of our customer service representatives who will be happy to assist you in finding a plan that fits your budget and coverage needs." },
+  { q: "Is it possible to pay my premium in installments?", a: "Our flexible and friendly payment plans make it possible to settle your premium in instalments through financial credit services and bank IPF (Investment Project Financing)." },
+  { q: "What should I consider when choosing a health plan that suits my need?", a: (<><p>Cover benefits, convenience, affordability, customer service and value-added benefits are some of the things to consider before signing on the dotted line. Our covers offer customized solutions with comprehensive benefits and rewards.</p><p className="mt-2">Some of the value-adds include:</p><ul className="mt-1 list-disc pl-5"><li>Cover for medical injuries resulting from political violence</li><li>Local and international rescue and evacuation services</li><li>Nutritional advice</li><li>24-hour call centre</li><li>Health camps and health alerts</li></ul></>) },
+  { q: "Can I get maternity cover if I join while pregnant?", a: "Our medical plans have maternity benefits with a waiting period of 1 year." },
+  { q: "Can I get an outpatient with inpatient cover?", a: "You must have inpatient cover for you to enjoy outpatient cover." },
+  { q: "Can I be refunded if I cancel my membership before my contract lapses?", a: "Refunds are considered for individuals who cancel their membership within 30 days of the policy. Otherwise, members withdrawing from the policy are not eligible for a premium refund." },
+  { q: "What is a pre-existing condition?", a: "A pre-existing condition is a medical condition which you knew or ought reasonably to have known of and can be medically proven to have existed prior to becoming a member or renewing a policy." },
+  { q: "Why do I need to make payment at some hospitals even though I have both outpatient and inpatient cover?", a: (<><p>You may be needed to pay under the following circumstances:</p><ol className="mt-1 list-decimal pl-5"><li>Visiting a provider without a referral note from the Insurance Company where one is required.</li><li>The condition being attended to may not be provided for under the Insurance Medical Scheme.</li><li>Visiting a hospital that is not in our panel of providers.</li><li>When you have exhausted your benefit limits.</li><li>Where a visit fee or copayment is applicable.</li></ol></>) },
+  { q: "What should I do if I have a complaint?", a: (<><p>For complaints or feedback please contact us on:</p><p className="mt-1"><strong>Email:</strong> <a className="text-primary underline" href="mailto:limielinsurance@gmail.com">limielinsurance@gmail.com</a></p><p><strong>Telephone:</strong> <a className="text-primary underline" href="tel:+254719401804">+254 719 401 804</a></p></>) },
 ];
 
 function HomePage() {
@@ -270,17 +275,28 @@ function Blog() {
 }
 
 function FAQ() {
+  const [q, setQ] = useState("");
+  const list = faqs.filter((f) => f.q.toLowerCase().includes(q.toLowerCase()));
   return (
-    <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-      <SectionHead eyebrow="FAQ" title="Common questions" desc="Everything you need to know before buying." />
-      <Accordion type="single" collapsible className="mt-10">
-        {faqs.map((f, i) => (
-          <AccordionItem key={i} value={`i${i}`}>
-            <AccordionTrigger className="text-left">{f.q}</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
+    <section id="faq" className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+      <SectionHead eyebrow="FAQ" title="Frequently Asked Questions" desc="Have questions about medical insurance? Find answers to some of the most common questions about our medical covers, payments, benefits and claims." />
+      <Input className="mt-8" placeholder="Search frequently asked questions..." value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search FAQs" />
+      <Accordion type="single" collapsible className="mt-6 space-y-3">
+        {list.map((f) => (
+          <AccordionItem key={f.q} value={f.q} className="rounded-xl border bg-card px-4 shadow-soft">
+            <AccordionTrigger className="py-4 text-left text-base">{f.q}</AccordionTrigger>
+            <AccordionContent className="text-muted-foreground leading-relaxed">{f.a}</AccordionContent>
           </AccordionItem>
         ))}
+        {list.length === 0 && <p className="text-center text-sm text-muted-foreground">No questions match your search.</p>}
       </Accordion>
+      <div className="mt-10 rounded-2xl border bg-muted/40 p-6 text-center">
+        <h3 className="text-xl font-semibold">Still have questions?</h3>
+        <p className="mt-2 text-muted-foreground">Our team is ready to help you understand your medical insurance options and find a cover that suits your needs.</p>
+        <Button asChild className="mt-4 gradient-hero-bg text-primary-foreground">
+          <Link to="/quote" search={{ product: "medical" } as never}>Get a Quote</Link>
+        </Button>
+      </div>
     </section>
   );
 }
