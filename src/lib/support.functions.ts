@@ -67,7 +67,7 @@ export const updateSupportContact = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { db } = await load(data.id, data.token);
-    const patch: Record<string, string> = {};
+    const patch: { name?: string; phone?: string } = {};
     if (data.name) patch.name = data.name;
     if (data.phone) patch.phone = data.phone;
     if (Object.keys(patch).length) await db.from("support_conversations").update(patch).eq("id", data.id);
