@@ -29,7 +29,12 @@ export const Route = createFileRoute("/")({
     { property: "og:description", content: "Motor, health, travel, life and business insurance from an independent Kenyan brokerage." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
-  ] }),
+  ], scripts: [{ type: "application/ld+json", children: JSON.stringify({
+    "@context": "https://schema.org", "@type": "InsuranceAgency", name: "Limiel Insurance Limited",
+    url: "https://limielinsurance.co.ke", email: "limielinsurance@gmail.com", telephone: "+254719401804",
+    address: { "@type": "PostalAddress", streetAddress: "Real Towers, Upper Hill", addressLocality: "Nairobi", addressCountry: "KE" },
+    sameAs: ["https://www.linkedin.com/in/limiel-insurance-company"],
+  }) }] }),
 });
 
 
@@ -74,7 +79,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <img src={heroImg} alt="" className="h-full w-full object-cover" width={1600} height={1100} />
+        <img src={heroImg} alt="Limiel Insurance — protecting families and businesses in Kenya" className="h-full w-full object-cover" width={1600} height={1100} />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/70 to-secondary/70" />
       </div>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-24 sm:px-6 md:py-32 lg:grid-cols-2 lg:items-center">

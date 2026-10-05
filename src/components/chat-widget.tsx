@@ -55,7 +55,7 @@ export function ChatWidget() {
 
   const submitEmail = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!event.currentTarget.reportValidity()) return;
+    if (!(event.currentTarget as HTMLFormElement).reportValidity()) return;
     setLoading(true);
     setError(null);
     try {
@@ -105,7 +105,7 @@ export function ChatWidget() {
 
   const saveRequestedPhone = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!session || !phone.trim() || !event.currentTarget.reportValidity()) return;
+    if (!session || !phone.trim() || !(event.currentTarget as HTMLFormElement).reportValidity()) return;
     setLoading(true);
     setError(null);
     try {
