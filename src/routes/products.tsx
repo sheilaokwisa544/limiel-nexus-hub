@@ -16,6 +16,7 @@ export const Route = createFileRoute("/products")({
     { name: "description", content: "Life, Medical, Retirement, Motor, Travel and Estate Planning insurance products from Limiel Insurance." },
     { property: "og:title", content: "Insurance Products — Limiel" },
     { property: "og:description", content: "Explore our six core insurance categories and get a personalised quote." },
+    { property: "og:type", content: "website" },
   ] }),
 });
 
