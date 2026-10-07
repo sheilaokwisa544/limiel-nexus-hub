@@ -437,6 +437,7 @@ function AdminDashboard() {
 
 const QUOTE_STATUSES = ["new", "contacted", "quote_prepared", "converted", "closed"] as const;
 const quoteStatusLabel = (s: string) => s.replace(/_/g, " ");
+const quoteProductLabel = (p: unknown) => (p === "partnership" ? "Partnership enquiry" : String(p).replace(/-/g, " "));
 const waLink = (phone: string) => {
   const d = phone.replace(/\D/g, "");
   const intl = d.startsWith("0") ? `254${d.slice(1)}` : d;
@@ -514,7 +515,7 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
             <SelectTrigger className="w-44"><SelectValue placeholder="Product" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All products</SelectItem>
-              {products.map((p) => <SelectItem key={p} value={p} className="capitalize">{p.replace(/-/g, " ")}</SelectItem>)}
+              {products.map((p) => <SelectItem key={p} value={p} className="capitalize">{quoteProductLabel(p)}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={fStatus} onValueChange={setFStatus}>
@@ -541,7 +542,7 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
             <TableBody>
               {rows.map((q) => (
                 <TableRow key={q.id} className="cursor-pointer" onClick={() => openQuote(q)}>
-                  <TableCell className="capitalize">{String(q.product).replace(/-/g, " ")}</TableCell>
+                  <TableCell className="capitalize">{quoteProductLabel(q.product)}</TableCell>
                   <TableCell className="font-medium">{q.full_name}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <a href={`tel:${q.phone}`} className="underline-offset-2 hover:underline">{q.phone}</a>
@@ -564,9 +565,9 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
           {open && (
             <>
               <SheetHeader>
-                <SheetTitle>Quote from {open.full_name}</SheetTitle>
+                <SheetTitle>{open.product === "partnership" ? "Partnership enquiry from" : "Quote from"} {open.full_name}</SheetTitle>
                 <p className="text-sm text-muted-foreground">
-                  <span className="capitalize">{String(open.product).replace(/-/g, " ")}</span> · submitted {new Date(open.created_at).toLocaleString("en-KE")}
+                  <span className="capitalize">{quoteProductLabel(open.product)}</span> · submitted {new Date(open.created_at).toLocaleString("en-KE")}
                 </p>
               </SheetHeader>
               <div className="mt-4 space-y-5 px-4 pb-6 text-sm">
@@ -586,7 +587,7 @@ function QuotesSection({ quotes, search }: { quotes: Row[]; search: string }) {
                 </div>
 
                 <div className="rounded-lg border p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover requested</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{open.product === "partnership" ? "Enquiry details" : "Cover requested"}</p>
                   {Object.keys(details).length === 0 ? (
                     <p className="text-muted-foreground">No details were provided with this request.</p>
                   ) : (

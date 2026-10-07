@@ -25,6 +25,7 @@ export function SiteNav() {
     { to: "/products", label: t("nav.products") },
     { to: "/explain", label: t("nav.explain") },
     { to: "/about", label: t("nav.about") },
+    { to: "/partnerships", label: t("nav.partnerships") },
     { to: "/blog", label: t("nav.blog") },
     { to: "/contact", label: t("nav.contact") },
   ] as const;

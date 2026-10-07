@@ -27,6 +27,7 @@ export function SiteFooter() {
           <h4 className="text-sm font-semibold">Quick Links</h4>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li><Link to="/about" className={linkCls}>About</Link></li>
+            <li><Link to="/partnerships" className={linkCls}>Partnerships</Link></li>
             <li><Link to="/products" className={linkCls}>Products</Link></li>
             <li><Link to="/quote" className={linkCls}>Get a Quote</Link></li>
             <li><Link to="/explain" className={linkCls}>Explain My Cover</Link></li>
