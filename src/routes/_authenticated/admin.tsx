@@ -74,6 +74,7 @@ function useDashData() {
       const userId = u.user?.id;
       const myRoles = (roles.data ?? []).map((r) => r.role as string);
       const isStaff = myRoles.some((r) => ["admin", "super_admin", "agent"].includes(r));
+      const isAdmin = myRoles.some((r) => ["admin", "super_admin"].includes(r));
       const ids = new Set<string>();
       [pol.data, pay.data, clm.data, fav.data].forEach((l) => (l ?? []).forEach((r: Row) => ids.add(r.user_id)));
       const { data: profs } = ids.size
@@ -81,7 +82,7 @@ function useDashData() {
         : { data: [] as Row[] };
       const people = new Map((profs ?? []).map((p: Row) => [p.id, p]));
       return {
-        user: u.user, userId, isStaff,
+        user: u.user, userId, isStaff, isAdmin,
         policies: (pol.data ?? []) as Row[], payments: (pay.data ?? []) as Row[],
         claims: (clm.data ?? []) as Row[], favorites: (fav.data ?? []) as Row[], people,
         quotes: (qt.data ?? []) as Row[],
