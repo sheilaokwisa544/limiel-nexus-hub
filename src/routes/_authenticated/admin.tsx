@@ -280,15 +280,77 @@ function AdminDashboard() {
                 <TableCell>{kes(Number(p.monthly_premium))}</TableCell>
                 <TableCell>{pays.length ? `${kes(paid)} (${pays.length})` : "—"}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => downloadPolicyPdf(p, clientName(p.user_id), pays).then(() => toast.success(t("dash.pdfDownloaded")))}>
-                    <Download className="mr-1 h-3.5 w-3.5" /> PDF
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => downloadPolicyPdf(p, clientName(p.user_id), pays).then(() => toast.success(t("dash.pdfDownloaded")))}>
+                      <Download className="mr-1 h-3.5 w-3.5" /> PDF
+                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(p)} aria-label="Edit policy">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleting(p)} aria-label="Delete policy" className="text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit policy {editing?.policy_number}</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label>Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm((f) => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["draft", "active", "expiring", "expired", "cancelled"].map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Monthly premium (KES)</Label>
+              <Input type="number" value={editForm.monthly_premium} onChange={(e) => setEditForm((f) => ({ ...f, monthly_premium: e.target.value }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Cover amount / sum assured (KES)</Label>
+              <Input type="number" value={editForm.sum_assured} onChange={(e) => setEditForm((f) => ({ ...f, sum_assured: e.target.value }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Renewal date</Label>
+              <Input type="date" value={editForm.renewal_date} onChange={(e) => setEditForm((f) => ({ ...f, renewal_date: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete policy {deleting?.policy_number}?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This permanently removes the policy. If it has any claims, payments or documents attached, deletion will be
+            blocked — in that case, edit the policy and change its status to <span className="font-medium">Cancelled</span> instead.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>Keep policy</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={saving}>{saving ? "Deleting…" : "Delete policy"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   };
 
