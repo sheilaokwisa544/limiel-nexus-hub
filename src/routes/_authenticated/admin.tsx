@@ -4,7 +4,7 @@ import { z } from "zod";
 import { motion } from "motion/react";
 import {
   Download, FileText, Shield, Wallet, Clock, AlertCircle, Plus, Home, LayoutDashboard,
-  Heart, Settings, LogOut, Search, BookOpen,
+  Heart, Settings, LogOut, Search, BookOpen, Pencil, Trash2,
 } from "lucide-react";
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Bar, BarChart, Legend } from "recharts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatWidget } from "@/components/chat-widget";
