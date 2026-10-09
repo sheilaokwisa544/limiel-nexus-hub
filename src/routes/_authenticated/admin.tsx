@@ -207,9 +207,59 @@ function AdminDashboard() {
   ];
 
   const PoliciesTable = ({ limit }: { limit?: number }) => {
+    const qc = useQueryClient();
+    const [editing, setEditing] = useState<Row | null>(null);
+    const [deleting, setDeleting] = useState<Row | null>(null);
+    const [editForm, setEditForm] = useState({ status: "", monthly_premium: "", sum_assured: "", renewal_date: "" });
+    const [saving, setSaving] = useState(false);
+    const isAdmin = data?.isAdmin;
+
+    const openEdit = (p: Row) => {
+      setEditForm({
+        status: p.status,
+        monthly_premium: String(p.monthly_premium ?? ""),
+        sum_assured: p.sum_assured != null ? String(p.sum_assured) : "",
+        renewal_date: p.renewal_date ?? "",
+      });
+      setEditing(p);
+    };
+
+    const saveEdit = async () => {
+      if (!editing) return;
+      setSaving(true);
+      const { error } = await supabase.from("policies").update({
+        status: editForm.status as Row["status"],
+        monthly_premium: Number(editForm.monthly_premium),
+        sum_assured: editForm.sum_assured === "" ? null : Number(editForm.sum_assured),
+        renewal_date: editForm.renewal_date,
+      }).eq("id", editing.id);
+      setSaving(false);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Policy updated.");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["dash-data"] });
+    };
+
+    const confirmDelete = async () => {
+      if (!deleting) return;
+      setSaving(true);
+      const { error } = await supabase.rpc("admin_delete_policy", { _policy_id: deleting.id });
+      setSaving(false);
+      if (error) {
+        toast.error(error.message.includes("POLICY_HAS_RELATED_RECORDS")
+          ? "This policy has claims, payments or documents attached, so it cannot be deleted. Change its status to Cancelled instead."
+          : error.message);
+        return;
+      }
+      toast.success("Policy deleted.");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["dash-data"] });
+    };
+
     const rows = (data?.policies ?? []).filter((p) => match(`${p.policy_number} ${clientName(p.user_id)} ${p.products?.name ?? ""} ${p.type}`)).slice(0, limit);
     if (rows.length === 0) return <Empty text="No policies yet." />;
     return (
+      <>
       <Table>
         <TableHeader><TableRow>
           <TableHead>Reference</TableHead>{data?.isStaff && <TableHead>Client</TableHead>}<TableHead>Product</TableHead>
