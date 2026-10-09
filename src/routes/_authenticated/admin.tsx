@@ -4,7 +4,7 @@ import { z } from "zod";
 import { motion } from "motion/react";
 import {
   Download, FileText, Shield, Wallet, Clock, AlertCircle, Plus, Home, LayoutDashboard,
-  Heart, Settings, LogOut, Search, BookOpen,
+  Heart, Settings, LogOut, Search, BookOpen, Pencil, Trash2,
 } from "lucide-react";
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Bar, BarChart, Legend } from "recharts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatWidget } from "@/components/chat-widget";
@@ -73,6 +74,7 @@ function useDashData() {
       const userId = u.user?.id;
       const myRoles = (roles.data ?? []).map((r) => r.role as string);
       const isStaff = myRoles.some((r) => ["admin", "super_admin", "agent"].includes(r));
+      const isAdmin = myRoles.some((r) => ["admin", "super_admin"].includes(r));
       const ids = new Set<string>();
       [pol.data, pay.data, clm.data, fav.data].forEach((l) => (l ?? []).forEach((r: Row) => ids.add(r.user_id)));
       const { data: profs } = ids.size
@@ -80,7 +82,7 @@ function useDashData() {
         : { data: [] as Row[] };
       const people = new Map((profs ?? []).map((p: Row) => [p.id, p]));
       return {
-        user: u.user, userId, isStaff,
+        user: u.user, userId, isStaff, isAdmin,
         policies: (pol.data ?? []) as Row[], payments: (pay.data ?? []) as Row[],
         claims: (clm.data ?? []) as Row[], favorites: (fav.data ?? []) as Row[], people,
         quotes: (qt.data ?? []) as Row[],
@@ -205,9 +207,59 @@ function AdminDashboard() {
   ];
 
   const PoliciesTable = ({ limit }: { limit?: number }) => {
+    const qc = useQueryClient();
+    const [editing, setEditing] = useState<Row | null>(null);
+    const [deleting, setDeleting] = useState<Row | null>(null);
+    const [editForm, setEditForm] = useState({ status: "", monthly_premium: "", sum_assured: "", renewal_date: "" });
+    const [saving, setSaving] = useState(false);
+    const isAdmin = data?.isAdmin;
+
+    const openEdit = (p: Row) => {
+      setEditForm({
+        status: p.status,
+        monthly_premium: String(p.monthly_premium ?? ""),
+        sum_assured: p.sum_assured != null ? String(p.sum_assured) : "",
+        renewal_date: p.renewal_date ?? "",
+      });
+      setEditing(p);
+    };
+
+    const saveEdit = async () => {
+      if (!editing) return;
+      setSaving(true);
+      const { error } = await supabase.from("policies").update({
+        status: editForm.status as Row["status"],
+        monthly_premium: Number(editForm.monthly_premium),
+        sum_assured: editForm.sum_assured === "" ? null : Number(editForm.sum_assured),
+        renewal_date: editForm.renewal_date,
+      }).eq("id", editing.id);
+      setSaving(false);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Policy updated.");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["dash-data"] });
+    };
+
+    const confirmDelete = async () => {
+      if (!deleting) return;
+      setSaving(true);
+      const { error } = await supabase.rpc("admin_delete_policy", { _policy_id: deleting.id });
+      setSaving(false);
+      if (error) {
+        toast.error(error.message.includes("POLICY_HAS_RELATED_RECORDS")
+          ? "This policy has claims, payments or documents attached, so it cannot be deleted. Change its status to Cancelled instead."
+          : error.message);
+        return;
+      }
+      toast.success("Policy deleted.");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["dash-data"] });
+    };
+
     const rows = (data?.policies ?? []).filter((p) => match(`${p.policy_number} ${clientName(p.user_id)} ${p.products?.name ?? ""} ${p.type}`)).slice(0, limit);
     if (rows.length === 0) return <Empty text="No policies yet." />;
     return (
+      <>
       <Table>
         <TableHeader><TableRow>
           <TableHead>Reference</TableHead>{data?.isStaff && <TableHead>Client</TableHead>}<TableHead>Product</TableHead>
@@ -228,15 +280,77 @@ function AdminDashboard() {
                 <TableCell>{kes(Number(p.monthly_premium))}</TableCell>
                 <TableCell>{pays.length ? `${kes(paid)} (${pays.length})` : "—"}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => downloadPolicyPdf(p, clientName(p.user_id), pays).then(() => toast.success(t("dash.pdfDownloaded")))}>
-                    <Download className="mr-1 h-3.5 w-3.5" /> PDF
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => downloadPolicyPdf(p, clientName(p.user_id), pays).then(() => toast.success(t("dash.pdfDownloaded")))}>
+                      <Download className="mr-1 h-3.5 w-3.5" /> PDF
+                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(p)} aria-label="Edit policy">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleting(p)} aria-label="Delete policy" className="text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit policy {editing?.policy_number}</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label>Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm((f) => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["draft", "active", "expiring", "expired", "cancelled"].map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Monthly premium (KES)</Label>
+              <Input type="number" value={editForm.monthly_premium} onChange={(e) => setEditForm((f) => ({ ...f, monthly_premium: e.target.value }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Cover amount / sum assured (KES)</Label>
+              <Input type="number" value={editForm.sum_assured} onChange={(e) => setEditForm((f) => ({ ...f, sum_assured: e.target.value }))} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Renewal date</Label>
+              <Input type="date" value={editForm.renewal_date} onChange={(e) => setEditForm((f) => ({ ...f, renewal_date: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete policy {deleting?.policy_number}?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This permanently removes the policy. If it has any claims, payments or documents attached, deletion will be
+            blocked — in that case, edit the policy and change its status to <span className="font-medium">Cancelled</span> instead.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>Keep policy</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={saving}>{saving ? "Deleting…" : "Delete policy"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   };
 
