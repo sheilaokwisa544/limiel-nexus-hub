@@ -43,6 +43,13 @@
       "when": 1790874854910,
       "tag": "0005_support_conversations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791534464886,
+      "tag": "0006_admin_policy_management",
+      "breakpoints": true
     }
   ]
 }
